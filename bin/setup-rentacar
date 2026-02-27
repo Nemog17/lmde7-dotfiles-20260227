@@ -3,11 +3,22 @@ set -euo pipefail
 
 # ============================================================================
 # setup-rentacar: Clona y prepara el proyecto rentacar-modern con Docker
-# Uso: setup-rentacar [directorio]   (default: ~/rentacar-modern)
+# Uso: setup-rentacar [--full] [directorio]   (default: ~/rentacar-modern)
+#   --full   Importa la DB completa (50 tablas) desde docker/db/full-schema.sql
+#   sin flag  Usa migraciones Laravel basicas (users, locations, provincias)
 # ============================================================================
 
 REPO_URL="https://github.com/Nemog17/rentacar-modern.git"
-PROJECT_DIR="${1:-$HOME/rentacar-modern}"
+FULL_DB=false
+
+# Parse argumentos
+for arg in "$@"; do
+    case "$arg" in
+        --full) FULL_DB=true ;;
+        *)      PROJECT_DIR="$arg" ;;
+    esac
+done
+PROJECT_DIR="${PROJECT_DIR:-$HOME/rentacar-modern}"
 
 # --- Colores ---
 RED='\033[0;31m'
@@ -27,6 +38,11 @@ echo -e "${BOLD}========================================${NC}"
 echo -e "${BOLD}  RentaCar Modern - Setup${NC}"
 echo -e "${BOLD}========================================${NC}"
 echo -e "  Directorio: $PROJECT_DIR"
+if [[ "$FULL_DB" == true ]]; then
+    echo -e "  Modo DB:    ${YELLOW}FULL${NC} (50 tablas desde full-schema.sql)"
+else
+    echo -e "  Modo DB:    basico (migraciones Laravel)"
+fi
 echo ""
 
 # ============================================================================
@@ -178,17 +194,36 @@ configure_laravel() {
     docker exec rentacar-backend php artisan key:generate --force --quiet
     ok "APP_KEY generado"
 
-    info "Publicando migraciones de Spatie Permission..."
-    docker exec rentacar-backend php artisan vendor:publish --tag=permission-migrations --force --quiet 2>/dev/null || true
-    ok "Migraciones de permisos publicadas"
+    if [[ "$FULL_DB" == true ]]; then
+        # --- Modo full: importar schema completo desde SQL ---
+        local schema_file="docker/db/full-schema.sql"
+        if [[ ! -f "$schema_file" ]]; then
+            fail "No se encontro $schema_file. Asegurate de que existe en el repo"
+            exit 1
+        fi
 
-    info "Ejecutando migrate:fresh..."
-    docker exec rentacar-backend php artisan migrate:fresh --force --quiet
-    ok "Base de datos migrada"
+        info "Importando schema completo (50 tablas)..."
+        docker cp "$schema_file" rentacar-db:/tmp/full-schema.sql
+        docker exec rentacar-db sh -c 'PGPASSWORD=secret psql -U rentacar -d rentacar -f /tmp/full-schema.sql' &>/dev/null
+        ok "Schema completo importado"
 
-    info "Ejecutando seeders (provincias + admin)..."
-    docker exec rentacar-backend php artisan db:seed --force --quiet
-    ok "Datos iniciales creados"
+        info "Ejecutando seeders (provincias + admin)..."
+        docker exec rentacar-backend php artisan db:seed --force --quiet
+        ok "Datos iniciales creados"
+    else
+        # --- Modo basico: migraciones Laravel ---
+        info "Publicando migraciones de Spatie Permission..."
+        docker exec rentacar-backend php artisan vendor:publish --tag=permission-migrations --force --quiet 2>/dev/null || true
+        ok "Migraciones de permisos publicadas"
+
+        info "Ejecutando migrate:fresh..."
+        docker exec rentacar-backend php artisan migrate:fresh --force --quiet
+        ok "Base de datos migrada"
+
+        info "Ejecutando seeders (provincias + admin)..."
+        docker exec rentacar-backend php artisan db:seed --force --quiet
+        ok "Datos iniciales creados"
+    fi
 }
 
 configure_laravel
