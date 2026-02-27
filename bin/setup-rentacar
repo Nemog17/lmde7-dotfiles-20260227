@@ -1,0 +1,250 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ============================================================================
+# setup-rentacar: Clona y prepara el proyecto rentacar-modern con Docker
+# Uso: setup-rentacar [directorio]   (default: ~/rentacar-modern)
+# ============================================================================
+
+REPO_URL="https://github.com/Nemog17/rentacar-modern.git"
+PROJECT_DIR="${1:-$HOME/rentacar-modern}"
+
+# --- Colores ---
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+info()  { echo -e "${BLUE}[*]${NC} $1"; }
+ok()    { echo -e "${GREEN}[+]${NC} $1"; }
+warn()  { echo -e "${YELLOW}[!]${NC} $1"; }
+fail()  { echo -e "${RED}[-]${NC} $1"; }
+
+echo ""
+echo -e "${BOLD}========================================${NC}"
+echo -e "${BOLD}  RentaCar Modern - Setup${NC}"
+echo -e "${BOLD}========================================${NC}"
+echo -e "  Directorio: $PROJECT_DIR"
+echo ""
+
+# ============================================================================
+# Paso 1/7: Verificar prerequisitos
+# ============================================================================
+info "${BOLD}Paso 1/7: Verificar prerequisitos${NC}"
+
+check_prerequisites() {
+    local missing=()
+
+    command -v git &>/dev/null || missing+=("git")
+    command -v docker &>/dev/null || missing+=("docker")
+
+    if [[ ${#missing[@]} -gt 0 ]]; then
+        fail "Faltan programas: ${missing[*]}"
+        exit 1
+    fi
+
+    if ! docker compose version &>/dev/null; then
+        fail "docker compose v2 no disponible. Instala Docker Desktop o docker-compose-plugin"
+        exit 1
+    fi
+
+    if ! docker info &>/dev/null 2>&1; then
+        fail "Docker daemon no esta corriendo. Inicia Docker primero"
+        exit 1
+    fi
+
+    ok "git, docker y docker compose disponibles"
+}
+
+check_prerequisites
+
+# ============================================================================
+# Paso 2/7: Clonar repositorio
+# ============================================================================
+echo ""
+info "${BOLD}Paso 2/7: Clonar repositorio${NC}"
+
+clone_repo() {
+    if [[ -d "$PROJECT_DIR" ]]; then
+        if [[ -d "$PROJECT_DIR/.git" ]]; then
+            warn "El directorio ya existe y es un repo git. Usando existente"
+            cd "$PROJECT_DIR"
+            git pull --ff-only 2>/dev/null || warn "No se pudo hacer pull (puede haber cambios locales)"
+            return 0
+        else
+            fail "$PROJECT_DIR existe pero no es un repo git"
+            exit 1
+        fi
+    fi
+
+    git clone "$REPO_URL" "$PROJECT_DIR"
+    ok "Repositorio clonado en $PROJECT_DIR"
+}
+
+clone_repo
+cd "$PROJECT_DIR"
+
+# ============================================================================
+# Paso 3/7: Configurar archivos .env
+# ============================================================================
+echo ""
+info "${BOLD}Paso 3/7: Configurar archivos .env${NC}"
+
+setup_env() {
+    # Backend .env
+    if [[ -f backend/.env ]]; then
+        warn "backend/.env ya existe, no se sobreescribe"
+    else
+        cp backend/.env.example backend/.env
+        # Parchear para Docker (nombres de servicios)
+        sed -i 's|DB_HOST=127.0.0.1|DB_HOST=db|' backend/.env
+        sed -i 's|DB_HOST=localhost|DB_HOST=db|' backend/.env
+        sed -i 's|REDIS_HOST=127.0.0.1|REDIS_HOST=redis|' backend/.env
+        sed -i 's|REDIS_HOST=localhost|REDIS_HOST=redis|' backend/.env
+        ok "backend/.env creado y configurado para Docker"
+    fi
+
+    # Frontend .env
+    if [[ -f frontend/.env ]]; then
+        warn "frontend/.env ya existe, no se sobreescribe"
+    else
+        cp frontend/.env.example frontend/.env
+        ok "frontend/.env creado"
+    fi
+}
+
+setup_env
+
+# ============================================================================
+# Paso 4/7: Construir y levantar contenedores
+# ============================================================================
+echo ""
+info "${BOLD}Paso 4/7: Construir y levantar contenedores Docker${NC}"
+
+start_docker() {
+    info "Construyendo imagenes y levantando contenedores..."
+    docker compose up -d --build
+
+    info "Esperando que los contenedores esten saludables..."
+    local max_wait=120
+    local elapsed=0
+
+    while [[ $elapsed -lt $max_wait ]]; do
+        if docker exec rentacar-db pg_isready -U rentacar &>/dev/null 2>&1; then
+            break
+        fi
+        sleep 3
+        elapsed=$((elapsed + 3))
+        echo -ne "  Esperando... ${elapsed}s / ${max_wait}s\r"
+    done
+    echo ""
+
+    if [[ $elapsed -ge $max_wait ]]; then
+        fail "Timeout esperando contenedores. Revisa: docker compose logs"
+        exit 1
+    fi
+
+    local running
+    running=$(docker compose ps --status running --format "{{.Name}}" | wc -l)
+    ok "$running contenedores corriendo"
+}
+
+start_docker
+
+# ============================================================================
+# Paso 5/7: Instalar dependencias del backend
+# ============================================================================
+echo ""
+info "${BOLD}Paso 5/7: Instalar dependencias del backend${NC}"
+
+install_deps() {
+    info "Ejecutando composer install..."
+    docker exec rentacar-backend composer install --no-interaction --optimize-autoloader --quiet
+    ok "Dependencias de PHP instaladas"
+}
+
+install_deps
+
+# ============================================================================
+# Paso 6/7: Configurar Laravel
+# ============================================================================
+echo ""
+info "${BOLD}Paso 6/7: Configurar Laravel (key, migraciones, seeds)${NC}"
+
+configure_laravel() {
+    info "Generando APP_KEY..."
+    docker exec rentacar-backend php artisan key:generate --force --quiet
+    ok "APP_KEY generado"
+
+    info "Publicando migraciones de Spatie Permission..."
+    docker exec rentacar-backend php artisan vendor:publish --tag=permission-migrations --force --quiet 2>/dev/null || true
+    ok "Migraciones de permisos publicadas"
+
+    info "Ejecutando migrate:fresh..."
+    docker exec rentacar-backend php artisan migrate:fresh --force --quiet
+    ok "Base de datos migrada"
+
+    info "Ejecutando seeders (provincias + admin)..."
+    docker exec rentacar-backend php artisan db:seed --force --quiet
+    ok "Datos iniciales creados"
+}
+
+configure_laravel
+
+# ============================================================================
+# Paso 7/7: Verificacion
+# ============================================================================
+echo ""
+info "${BOLD}Paso 7/7: Verificacion${NC}"
+
+verify_setup() {
+    # Test DB
+    local user_count
+    user_count=$(docker exec rentacar-backend php artisan tinker --execute="echo App\Models\User::count();" 2>/dev/null | tail -1)
+    if [[ "$user_count" -gt 0 ]] 2>/dev/null; then
+        ok "DB OK: $user_count usuario(s) creado(s)"
+    else
+        warn "No se pudo verificar la base de datos"
+    fi
+
+    # Test API
+    local api_status
+    api_status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000 2>/dev/null || echo "000")
+    if [[ "$api_status" != "000" ]]; then
+        ok "API respondiendo (HTTP $api_status)"
+    else
+        warn "API no responde aun en localhost:8000 (puede tardar unos segundos)"
+    fi
+
+    # Test Frontend
+    local frontend_status
+    frontend_status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5173 2>/dev/null || echo "000")
+    if [[ "$frontend_status" != "000" ]]; then
+        ok "Frontend respondiendo (HTTP $frontend_status)"
+    else
+        warn "Frontend no responde aun en localhost:5173 (npm install puede tardar)"
+    fi
+}
+
+verify_setup
+
+# ============================================================================
+# Resumen
+# ============================================================================
+echo ""
+echo -e "${BOLD}========================================${NC}"
+echo -e "${BOLD}  Setup completo!${NC}"
+echo -e "${BOLD}========================================${NC}"
+echo ""
+echo -e "  ${GREEN}Backend API:${NC}   http://localhost:8000"
+echo -e "  ${GREEN}Frontend:${NC}      http://localhost:5173"
+echo -e "  ${GREEN}PostgreSQL:${NC}    localhost:5432 (rentacar/secret)"
+echo -e "  ${GREEN}Redis:${NC}         localhost:6379"
+echo ""
+echo -e "  ${BOLD}Admin login:${NC}   admin@example.com / change-me"
+echo ""
+echo -e "  Para abrir el workspace de desarrollo:"
+echo -e "    ${BOLD}code $PROJECT_DIR${NC}"
+echo ""
