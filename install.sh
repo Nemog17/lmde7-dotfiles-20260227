@@ -83,9 +83,10 @@ case "$choice" in
     4)
         echo ""
         echo -e "${GREEN}${BOLD}Symlinks creados. Los comandos estan disponibles en una nueva terminal:${NC}"
-        echo "  setup-dev-env  - instalar entorno de desarrollo"
-        echo "  code           - abrir workspace tmux"
-        echo "  migrate-vm     - migrar VMs entre distros"
+        echo "  setup-dev-env   - instalar entorno de desarrollo"
+        echo "  setup-rentacar  - clonar y levantar rentacar-modern con Docker"
+        echo "  code            - abrir workspace tmux"
+        echo "  migrate-vm      - migrar VMs entre distros"
         ;;
     *)
         echo ""
