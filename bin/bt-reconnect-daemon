@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+import os
+import re
+import signal
+import subprocess
+import sys
+import time
+from datetime import datetime
+
+LOG_PATH = os.path.expanduser("~/.local/state/bt-reconnect.log")
+DEFAULT_MACS = "34:88:5D:63:99:67"  # Keyboard K380
+POLL_SECONDS = float(os.getenv("BT_RECONNECT_POLL", "8"))
+MAX_BACKOFF = float(os.getenv("BT_RECONNECT_MAX_BACKOFF", "90"))
+RECOVER_COOLDOWN = float(os.getenv("BT_RECONNECT_RECOVER_COOLDOWN", "120"))
+
+RUNNING = True
+LAST_RECOVER_TS = 0.0
+
+
+def log(msg: str) -> None:
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    line = f"[{ts}] {msg}\n"
+    try:
+        with open(LOG_PATH, "a", encoding="utf-8") as fh:
+            fh.write(line)
+    except Exception:
+        pass
+
+
+def run(cmd: list[str], timeout: float = 8.0) -> str:
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, check=False)
+        out = (proc.stdout or "") + (proc.stderr or "")
+        return out.strip()
+    except Exception as exc:
+        return f"ERROR: {exc}"
+
+
+def parse_info(raw: str) -> dict[str, str]:
+    data: dict[str, str] = {}
+    for line in raw.splitlines():
+        m = re.match(r"\s*([A-Za-z]+):\s*(.+?)\s*$", line)
+        if m:
+            data[m.group(1)] = m.group(2)
+    return data
+
+
+def power_on() -> None:
+    out = run(["bluetoothctl", "show"], timeout=5)
+    if "Powered: yes" in out:
+        return
+    run(["bluetoothctl", "power", "on"], timeout=8)
+    log("bluetoothctl power on")
+
+
+def connect_device(mac: str) -> tuple[bool, str]:
+    out = run(["bluetoothctl", "connect", mac], timeout=12)
+    ok = ("Connection successful" in out) or ("Connected: yes" in out)
+    log(f"connect {mac}: {'OK' if ok else 'FAIL'} | {out[:220]}")
+    return ok, out
+
+
+def recover_adapter(reason: str) -> None:
+    global LAST_RECOVER_TS
+    now = time.time()
+    if (now - LAST_RECOVER_TS) < RECOVER_COOLDOWN:
+        log(
+            "adapter recover skipped | cooldown"
+            f" remaining={RECOVER_COOLDOWN - (now - LAST_RECOVER_TS):.1f}s"
+        )
+        return
+
+    LAST_RECOVER_TS = now
+    log(f"adapter recover start | reason={reason}")
+    run(["bluetoothctl", "power", "off"], timeout=8)
+    time.sleep(1.2)
+    run(["bluetoothctl", "power", "on"], timeout=8)
+    time.sleep(1.8)
+    log("adapter recover done")
+
+
+def should_attempt(info: dict[str, str]) -> bool:
+    paired = info.get("Paired", "no") == "yes"
+    trusted = info.get("Trusted", "no") == "yes"
+    connected = info.get("Connected", "no") == "yes"
+    blocked = info.get("Blocked", "no") == "yes"
+    return paired and trusted and (not connected) and (not blocked)
+
+
+def sigterm(_signum, _frame):
+    global RUNNING
+    RUNNING = False
+
+
+def main() -> int:
+    signal.signal(signal.SIGTERM, sigterm)
+    signal.signal(signal.SIGINT, sigterm)
+
+    raw_macs = os.getenv("BT_RECONNECT_MACS", DEFAULT_MACS)
+    macs = [m.strip().upper() for m in raw_macs.split(",") if m.strip()]
+    if not macs:
+        print("No MACs configured in BT_RECONNECT_MACS", file=sys.stderr)
+        return 1
+
+    log("daemon start | devices=" + ",".join(macs))
+
+    next_try: dict[str, float] = {m: 0.0 for m in macs}
+    backoff: dict[str, float] = {m: 4.0 for m in macs}
+
+    while RUNNING:
+        now = time.time()
+        power_on()
+
+        for mac in macs:
+            if now < next_try[mac]:
+                continue
+
+            info_raw = run(["bluetoothctl", "info", mac], timeout=6)
+            if "Device" not in info_raw:
+                next_try[mac] = now + 30
+                continue
+
+            info = parse_info(info_raw)
+            if not should_attempt(info):
+                # Keep lightweight polling when already connected.
+                backoff[mac] = 4.0
+                next_try[mac] = now + POLL_SECONDS
+                continue
+
+            ok, out = connect_device(mac)
+            if ok:
+                backoff[mac] = 4.0
+                next_try[mac] = now + POLL_SECONDS
+            else:
+                if "br-connection-create-socket" in out:
+                    recover_adapter("br-connection-create-socket")
+                backoff[mac] = min(MAX_BACKOFF, backoff[mac] * 1.7)
+                next_try[mac] = now + backoff[mac]
+
+        time.sleep(POLL_SECONDS)
+
+    log("daemon stop")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
