@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# --- code: tmux dev layout launcher ---
+# Usage: code [directory]
+# Opens a tmux session with 4 panes: claude, yazi, lazygit, lazydocker
+
+dir="${1:-$PWD}"
+
+if [[ ! -d "$dir" ]]; then
+    echo "Error: '$dir' no es un directorio válido" >&2
+    exit 1
+fi
+
+dir="$(cd "$dir" && pwd)"
+session="$(basename "$dir")"
+
+# Sanitize session name (tmux doesn't allow dots or colons)
+session="${session//\./_}"
+session="${session//:/_}"
+
+if ! command -v tmux &>/dev/null; then
+    echo "Error: tmux no está instalado" >&2
+    exit 1
+fi
+
+# If session already exists, attach to it
+if tmux has-session -t "=$session" 2>/dev/null; then
+    exec tmux attach-session -t "=$session"
+fi
+
+# Helper: returns the command to run, or a fallback message
+run_or_fallback() {
+    local cmd="$1" pkg="$2"
+    if command -v "$cmd" &>/dev/null; then
+        echo "$cmd"
+    else
+        echo "echo '[$cmd] no instalado. Instalar con: $pkg'; exec bash"
+    fi
+}
+
+cmd_yazi="$(run_or_fallback yazi 'cargo install --locked yazi-fm yazi-cli')"
+cmd_lazygit="$(run_or_fallback lazygit 'go install github.com/jesseduffield/lazygit@latest')"
+cmd_lazydocker="$(run_or_fallback lazydocker 'go install github.com/jesseduffield/lazydocker@latest')"
+
+# Create session and capture stable pane IDs (%N) instead of indices
+cols="$(tput cols 2>/dev/null || echo 220)"
+lines="$(tput lines 2>/dev/null || echo 50)"
+pane_claude=$(tmux new-session -d -s "$session" -c "$dir" -x "$cols" -y "$lines" -PF '#{pane_id}')
+
+# Split top-left horizontally → top-right: yazi
+pane_yazi=$(tmux split-window -h -t "$pane_claude" -c "$dir" -PF '#{pane_id}')
+
+# Split top-left vertically → bottom-left: lazygit
+pane_lazygit=$(tmux split-window -v -t "$pane_claude" -c "$dir" -PF '#{pane_id}')
+
+# Split top-right vertically → bottom-right: lazydocker
+pane_lazydocker=$(tmux split-window -v -t "$pane_yazi" -c "$dir" -PF '#{pane_id}')
+
+# Send commands to each pane by stable ID
+tmux send-keys -t "$pane_claude" 'claude' Enter
+tmux send-keys -t "$pane_yazi" "$cmd_yazi" Enter
+tmux send-keys -t "$pane_lazygit" "$cmd_lazygit" Enter
+tmux send-keys -t "$pane_lazydocker" "$cmd_lazydocker" Enter
+
+# Focus on claude pane
+tmux select-pane -t "$pane_claude"
+
+# Attach
+exec tmux attach-session -t "=$session"
