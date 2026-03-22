@@ -13,20 +13,16 @@ if [[ ! -d "$dir" ]]; then
 fi
 
 dir="$(cd "$dir" && pwd)"
-session="$(basename "$dir")"
 
-# Sanitize session name (tmux doesn't allow dots or colons)
-session="${session//\./_}"
-session="${session//:/_}"
+# Session name = fecha actual, si ya existe agregar hora exacta con segundos
+session="$(date +%Y-%m-%d)"
+if tmux has-session -t "=$session" 2>/dev/null; then
+    session="$(date +%Y-%m-%d_%H-%M-%S)"
+fi
 
 if ! command -v tmux &>/dev/null; then
     echo "Error: tmux no está instalado" >&2
     exit 1
-fi
-
-# If session already exists, attach to it
-if tmux has-session -t "=$session" 2>/dev/null; then
-    exec tmux attach-session -t "=$session"
 fi
 
 # Helper: returns the command to run, or a fallback message
@@ -58,7 +54,7 @@ pane_lazygit=$(tmux split-window -v -t "$pane_claude" -c "$dir" -PF '#{pane_id}'
 pane_lazydocker=$(tmux split-window -v -t "$pane_yazi" -c "$dir" -PF '#{pane_id}')
 
 # Send commands to each pane by stable ID
-tmux send-keys -t "$pane_claude" 'claude' Enter
+tmux send-keys -t "$pane_claude" 'TMPDIR=~/.cache/tmp claude --permission-mode plan --allow-dangerously-skip-permissions --effort max' Enter
 tmux send-keys -t "$pane_yazi" "$cmd_yazi" Enter
 tmux send-keys -t "$pane_lazygit" "$cmd_lazygit" Enter
 tmux send-keys -t "$pane_lazydocker" "$cmd_lazydocker" Enter

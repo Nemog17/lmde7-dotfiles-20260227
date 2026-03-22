@@ -3,7 +3,7 @@ set -uo pipefail
 
 # ============================================================================
 # setup-dev-env: Instala el entorno de desarrollo completo en cualquier Linux
-# Herramientas: kitty, tmux, claude, yazi, lazygit, lazydocker + script "code"
+# Herramientas: kitty, tmux, claude, claude-hud, yazi, lazygit, lazydocker + script "code"
 # ============================================================================
 
 # --- Colores ---
@@ -69,7 +69,7 @@ declare -A RESULTS
 # Paso 1: Dependencias del sistema (tmux, git, curl, unzip, tar)
 # ============================================================================
 echo ""
-info "${BOLD}Paso 1/7: Dependencias del sistema${NC}"
+info "${BOLD}Paso 1/8: Dependencias del sistema${NC}"
 
 install_system_deps() {
     local pkgs=(tmux git curl unzip tar)
@@ -109,7 +109,7 @@ install_system_deps
 # Paso 2: Kitty terminal
 # ============================================================================
 echo ""
-info "${BOLD}Paso 2/7: Kitty terminal${NC}"
+info "${BOLD}Paso 2/8: Kitty terminal${NC}"
 
 install_kitty() {
     if command -v kitty &>/dev/null; then
@@ -152,7 +152,7 @@ install_kitty
 # Paso 3: Claude Code CLI
 # ============================================================================
 echo ""
-info "${BOLD}Paso 3/7: Claude Code CLI${NC}"
+info "${BOLD}Paso 3/8: Claude Code CLI${NC}"
 
 install_claude() {
     if command -v claude &>/dev/null; then
@@ -178,10 +178,156 @@ install_claude() {
 install_claude
 
 # ============================================================================
-# Paso 4: Yazi (file manager TUI)
+# Paso 4/8: Claude HUD (statusline plugin)
 # ============================================================================
 echo ""
-info "${BOLD}Paso 4/7: Yazi${NC}"
+info "${BOLD}Paso 4/8: Claude HUD${NC}"
+
+setup_claude_hud() {
+    local claude_dir="$HOME/.claude"
+    local hud_marketplace="$claude_dir/plugins/marketplaces/claude-hud"
+    local hud_cache="$claude_dir/plugins/cache/claude-hud/claude-hud"
+    local hud_config_dir="$claude_dir/plugins/claude-hud"
+    local installed_json="$claude_dir/plugins/installed_plugins.json"
+    local marketplaces_json="$claude_dir/plugins/known_marketplaces.json"
+    local settings_json="$claude_dir/settings.json"
+
+    if ! command -v claude &>/dev/null; then
+        warn "Claude no instalado, saltando HUD"
+        RESULTS[claude_hud]="saltado"
+        return 0
+    fi
+
+    # Fix TMPDIR para Linux (EXDEV cross-device link)
+    mkdir -p "$HOME/.cache/tmp"
+
+    # Crear directorios necesarios
+    mkdir -p "$claude_dir/plugins/cache" "$claude_dir/plugins/marketplaces"
+
+    # Clonar marketplace si no existe
+    if [[ -d "$hud_marketplace/.git" ]]; then
+        info "Actualizando claude-hud marketplace..."
+        git -C "$hud_marketplace" pull --ff-only -q 2>/dev/null || true
+    else
+        info "Clonando claude-hud marketplace..."
+        rm -rf "$hud_marketplace"
+        TMPDIR="$HOME/.cache/tmp" git clone -q https://github.com/jarrodwatts/claude-hud.git "$hud_marketplace" || {
+            fail "No se pudo clonar claude-hud"
+            RESULTS[claude_hud]="fallo"
+            return 1
+        }
+    fi
+
+    # Obtener version del plugin
+    local version
+    version=$(grep -Po '"version": "\K[^"]*' "$hud_marketplace/package.json" 2>/dev/null || echo "0.0.10")
+
+    # Copiar al cache
+    mkdir -p "$hud_cache/$version"
+    cp -r "$hud_marketplace"/* "$hud_cache/$version/"
+    ok "Plugin copiado al cache (v$version)"
+
+    # Registrar en installed_plugins.json
+    if [[ -f "$installed_json" ]] && ! grep -q "claude-hud" "$installed_json" 2>/dev/null; then
+        local now
+        now="$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
+        # Insertar entrada con python (json seguro)
+        python3 -c "
+import json
+with open('$installed_json', 'r') as f:
+    data = json.load(f)
+data['plugins']['claude-hud@claude-hud'] = [{
+    'scope': 'user',
+    'installPath': '$hud_cache/$version',
+    'version': '$version',
+    'installedAt': '$now',
+    'lastUpdated': '$now'
+}]
+with open('$installed_json', 'w') as f:
+    json.dump(data, f, indent=2)
+    f.write('\n')
+" 2>/dev/null && ok "Plugin registrado en installed_plugins.json" || warn "No se pudo registrar plugin"
+    else
+        warn "Plugin ya registrado o archivo no existe"
+    fi
+
+    # Registrar marketplace
+    if [[ -f "$marketplaces_json" ]] && ! grep -q "claude-hud" "$marketplaces_json" 2>/dev/null; then
+        local now
+        now="$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
+        python3 -c "
+import json
+with open('$marketplaces_json', 'r') as f:
+    data = json.load(f)
+data['claude-hud'] = {
+    'source': {'source': 'github', 'repo': 'jarrodwatts/claude-hud'},
+    'installLocation': '$hud_marketplace',
+    'lastUpdated': '$now'
+}
+with open('$marketplaces_json', 'w') as f:
+    json.dump(data, f, indent=2)
+    f.write('\n')
+" 2>/dev/null && ok "Marketplace registrado" || warn "No se pudo registrar marketplace"
+    fi
+
+    # Crear config del HUD con todas las features
+    mkdir -p "$hud_config_dir"
+    cat > "$hud_config_dir/config.json" <<'EOJSON'
+{
+  "display": {
+    "showTools": true,
+    "showAgents": true,
+    "showTodos": true,
+    "showDuration": true,
+    "showConfigCounts": true,
+    "showSpeed": true,
+    "showSessionName": true
+  },
+  "gitStatus": {
+    "showAheadBehind": true,
+    "showFileStats": true
+  }
+}
+EOJSON
+    ok "Config del HUD creada (todas las features activadas)"
+
+    # Configurar statusLine en settings.json
+    local runtime
+    runtime="$(command -v bun 2>/dev/null || command -v node 2>/dev/null)"
+    if [[ -z "$runtime" ]]; then
+        fail "No se encontro node ni bun para el HUD"
+        RESULTS[claude_hud]="fallo"
+        return 1
+    fi
+
+    local source_file="dist/index.js"
+    [[ "$(basename "$runtime")" == "bun" ]] && source_file="src/index.ts"
+
+    local hud_command="bash -c 'plugin_dir=\$(ls -d \"\${CLAUDE_CONFIG_DIR:-\$HOME/.claude}\"/plugins/cache/claude-hud/claude-hud/*/ 2>/dev/null | awk -F/ '\"'\"'{ print \$(NF-1) \"\\t\" \$0 }'\"'\"' | sort -t. -k1,1n -k2,2n -k3,3n -k4,4n | tail -1 | cut -f2-); exec \"$runtime\" \"\${plugin_dir}$source_file\"'"
+
+    if [[ -f "$settings_json" ]]; then
+        python3 -c "
+import json
+with open('$settings_json', 'r') as f:
+    cfg = json.load(f)
+cfg['statusLine'] = {'type': 'command', 'command': '''$hud_command'''}
+cfg.setdefault('enabledPlugins', {})['claude-hud@claude-hud'] = True
+with open('$settings_json', 'w') as f:
+    json.dump(cfg, f, indent=2)
+    f.write('\n')
+" 2>/dev/null && ok "StatusLine del HUD configurado en settings.json" || warn "No se pudo actualizar settings.json"
+    fi
+
+    RESULTS[claude_hud]="ok"
+}
+
+setup_claude_hud
+
+# ============================================================================
+# Paso 5/8: Yazi (file manager TUI)
+# ============================================================================
+echo ""
+info "${BOLD}Paso 5/8: Yazi${NC}"
 
 install_yazi() {
     if command -v yazi &>/dev/null; then
@@ -221,10 +367,10 @@ install_yazi() {
 install_yazi
 
 # ============================================================================
-# Paso 5: Lazygit (Git TUI)
+# Paso 6/8: Lazygit (Git TUI)
 # ============================================================================
 echo ""
-info "${BOLD}Paso 5/7: Lazygit${NC}"
+info "${BOLD}Paso 6/8: Lazygit${NC}"
 
 install_lazygit() {
     if command -v lazygit &>/dev/null; then
@@ -271,10 +417,10 @@ install_lazygit() {
 install_lazygit
 
 # ============================================================================
-# Paso 6: Lazydocker (Docker TUI)
+# Paso 7/8: Lazydocker (Docker TUI)
 # ============================================================================
 echo ""
-info "${BOLD}Paso 6/7: Lazydocker${NC}"
+info "${BOLD}Paso 7/8: Lazydocker${NC}"
 
 install_lazydocker() {
     if command -v lazydocker &>/dev/null; then
@@ -321,10 +467,10 @@ install_lazydocker() {
 install_lazydocker
 
 # ============================================================================
-# Paso 7: PATH setup
+# Paso 8/8: PATH setup
 # ============================================================================
 echo ""
-info "${BOLD}Paso 7/7: Configuracion de PATH${NC}"
+info "${BOLD}Paso 8/8: Configuracion de PATH${NC}"
 
 setup_path() {
     local line='export PATH="$HOME/.local/bin:$PATH"'
@@ -363,11 +509,12 @@ echo -e "${BOLD}========================================${NC}"
 echo -e "${BOLD}  Resumen de instalacion${NC}"
 echo -e "${BOLD}========================================${NC}"
 
-tools_order=(dependencias kitty claude yazi lazygit lazydocker path)
+tools_order=(dependencias kitty claude claude_hud yazi lazygit lazydocker path)
 tool_labels=(
     "Dependencias (tmux, git, curl)"
     "Kitty terminal"
     "Claude Code CLI"
+    "Claude HUD (statusline)"
     "Yazi (file manager)"
     "Lazygit (Git TUI)"
     "Lazydocker (Docker TUI)"
