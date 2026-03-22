@@ -58,7 +58,7 @@ fi
 echo ""
 echo -e "${BOLD}Que quieres instalar?${NC}"
 echo ""
-echo "  1) Entorno de desarrollo completo (tmux, Kitty, Claude, Yazi, Lazygit, Lazydocker)"
+echo "  1) Entorno de desarrollo completo (tmux, Kitty, Claude + HUD, Yazi, Lazygit, Lazydocker)"
 echo "  2) Solo herramientas de VM (QEMU, libvirt, OVMF, swtpm)"
 echo "  3) Todo (dev env + VMs)"
 echo "  4) Nada (solo symlinks y PATH)"
