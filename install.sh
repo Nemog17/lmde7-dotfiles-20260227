@@ -39,6 +39,25 @@ for script in "$DOTFILES_DIR"/bin/*; do
     fi
 done
 
+# --- Claude Code: CLAUDE.md + Agents ---
+echo ""
+echo -e "${BLUE}[*]${NC} Configurando Claude Code agents..."
+
+mkdir -p "$HOME/.claude/agents"
+
+# Copiar CLAUDE.md global
+if [[ -f "$DOTFILES_DIR/claude/CLAUDE.md" ]]; then
+    cp "$DOTFILES_DIR/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
+    echo -e "  ${GREEN}[+]${NC}  CLAUDE.md -> ~/.claude/CLAUDE.md"
+fi
+
+# Copiar agentes
+for agent in "$DOTFILES_DIR"/claude/agents/*.md; do
+    name="$(basename "$agent")"
+    cp "$agent" "$HOME/.claude/agents/$name"
+    echo -e "  ${GREEN}[+]${NC}  Agent: $name"
+done
+
 # --- PATH setup ---
 line='export PATH="$HOME/.local/bin:$PATH"'
 if ! grep -qF '.local/bin' "$HOME/.bashrc" 2>/dev/null; then
