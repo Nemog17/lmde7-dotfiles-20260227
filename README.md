@@ -18,6 +18,7 @@ git clone https://github.com/Nemog17/lmde7-dotfiles-20260227.git ~/dotfiles
 | `code` | Abre un workspace tmux con 4 panes: Claude Code, Yazi, Lazygit, Lazydocker |
 | `setup-dev-env` | Instala entorno de desarrollo completo (tmux, Kitty, Claude + HUD, Yazi, Lazygit, Lazydocker) |
 | `setup-claude` | Instala skills, MCP servers, agentes y CLI tools en cualquier proyecto |
+| `agents` | Ver y gestionar agentes de Claude Code (`agents list`, `agents info pm`) |
 | `setup-rentacar` | Clona y levanta el proyecto rentacar-modern con Docker |
 | `migrate-vm` | Migra VMs (QEMU/libvirt) entre distros |
 

@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ============================================================================
+# agents: Ver y gestionar agentes de Claude Code
+# Uso: agents [list|info <name>|global|project]
+# ============================================================================
+
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+BOLD='\033[1m'
+DIM='\033[2m'
+NC='\033[0m'
+
+GLOBAL_DIR="$HOME/.claude/agents"
+PROJECT_DIR=".claude/agents"
+
+show_agent() {
+    local file="$1"
+    local name model desc
+    name=$(grep '^name:' "$file" | head -1 | sed 's/name: *//')
+    model=$(grep '^model:' "$file" | head -1 | sed 's/model: *//')
+    desc=$(grep '^description:' "$file" | head -1 | sed 's/description: *//')
+    effort=$(grep '^effort:' "$file" | head -1 | sed 's/effort: *//')
+
+    if [[ -n "$effort" ]]; then
+        model="$model ($effort)"
+    fi
+
+    printf "  ${GREEN}%-12s${NC} ${DIM}%-18s${NC} %s\n" "$name" "[$model]" "$desc"
+}
+
+list_agents() {
+    echo ""
+    echo -e "${BOLD}Agentes del proyecto${NC} ($PROJECT_DIR/)"
+    if [[ -d "$PROJECT_DIR" ]] && [[ -n "$(ls -A "$PROJECT_DIR" 2>/dev/null)" ]]; then
+        for f in "$PROJECT_DIR"/*.md; do
+            show_agent "$f"
+        done
+    else
+        echo -e "  ${DIM}(ninguno)${NC}"
+    fi
+
+    echo ""
+    echo -e "${BOLD}Agentes globales${NC} ($GLOBAL_DIR/)"
+    if [[ -d "$GLOBAL_DIR" ]] && [[ -n "$(ls -A "$GLOBAL_DIR" 2>/dev/null)" ]]; then
+        for f in "$GLOBAL_DIR"/*.md; do
+            show_agent "$f"
+        done
+    else
+        echo -e "  ${DIM}(ninguno)${NC}"
+    fi
+    echo ""
+}
+
+show_info() {
+    local name="$1"
+    local file=""
+
+    # Buscar en proyecto primero, luego global
+    if [[ -f "$PROJECT_DIR/$name.md" ]]; then
+        file="$PROJECT_DIR/$name.md"
+        echo -e "${BLUE}[proyecto]${NC} $file"
+    elif [[ -f "$GLOBAL_DIR/$name.md" ]]; then
+        file="$GLOBAL_DIR/$name.md"
+        echo -e "${BLUE}[global]${NC} $file"
+    else
+        echo "Agente '$name' no encontrado."
+        exit 1
+    fi
+
+    echo ""
+    cat "$file"
+}
+
+case "${1:-list}" in
+    list|ls)
+        list_agents
+        ;;
+    info|show)
+        if [[ -z "${2:-}" ]]; then
+            echo "Uso: agents info <nombre>"
+            exit 1
+        fi
+        show_info "$2"
+        ;;
+    global)
+        echo ""
+        echo -e "${BOLD}Agentes globales${NC} ($GLOBAL_DIR/)"
+        if [[ -d "$GLOBAL_DIR" ]]; then
+            for f in "$GLOBAL_DIR"/*.md; do show_agent "$f"; done
+        fi
+        echo ""
+        ;;
+    project)
+        echo ""
+        echo -e "${BOLD}Agentes del proyecto${NC} ($PROJECT_DIR/)"
+        if [[ -d "$PROJECT_DIR" ]]; then
+            for f in "$PROJECT_DIR"/*.md; do show_agent "$f"; done
+        fi
+        echo ""
+        ;;
+    help|--help|-h)
+        echo "agents — Ver y gestionar agentes de Claude Code"
+        echo ""
+        echo "Uso:"
+        echo "  agents              Listar todos los agentes"
+        echo "  agents list         Listar todos los agentes"
+        echo "  agents info <name>  Ver detalle de un agente"
+        echo "  agents global       Solo agentes globales"
+        echo "  agents project      Solo agentes del proyecto"
+        ;;
+    *)
+        echo "Comando no reconocido: $1"
+        echo "Usa: agents help"
+        exit 1
+        ;;
+esac

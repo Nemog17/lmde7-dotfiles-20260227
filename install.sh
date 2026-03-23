@@ -58,6 +58,16 @@ for agent in "$DOTFILES_DIR"/claude/agents/*.md; do
     echo -e "  ${GREEN}[+]${NC}  Agent: $name"
 done
 
+# Copiar settings.json (con HUD, plugins, permisos)
+if [[ -f "$DOTFILES_DIR/claude/settings/settings.json" ]]; then
+    if [[ -f "$HOME/.claude/settings.json" ]]; then
+        echo -e "  ${YELLOW}[!]${NC}  settings.json ya existe — backup en settings.json.bak"
+        cp "$HOME/.claude/settings.json" "$HOME/.claude/settings.json.bak"
+    fi
+    cp "$DOTFILES_DIR/claude/settings/settings.json" "$HOME/.claude/settings.json"
+    echo -e "  ${GREEN}[+]${NC}  settings.json (HUD, plugins, permisos)"
+fi
+
 # --- PATH setup ---
 line='export PATH="$HOME/.local/bin:$PATH"'
 if ! grep -qF '.local/bin' "$HOME/.bashrc" 2>/dev/null; then
