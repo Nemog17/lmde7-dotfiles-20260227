@@ -58,7 +58,9 @@ claude/
        (refactors)      (prototipos)
 ```
 
-### PM Agent — El orquestador
+### PM Agent — El orquestador (OBLIGATORIO)
+
+PM es el agente principal de TODA sesion. Se configura automaticamente via `"agent": "pm"` en settings.json + un hook `UserPromptSubmit` que refuerza la regla en cada prompt.
 
 No escribe codigo. Planifica, delega, revisa y coordina. Se comunica con el usuario en espanol simple y con los agentes en tecnicismos precisos como un Staff Engineer.
 
@@ -152,6 +154,8 @@ Claude Code se lanza con: `--permission-mode plan --effort max`
 
 Se sincroniza automaticamente. Incluye:
 
+- **Agent**: `pm` — PM arranca como agente principal en cada sesion
+- **Hook**: `UserPromptSubmit` — inyecta recordatorio obligatorio de usar PM en cada prompt
 - **HUD**: Statusline con info de sesion, tokens, modelo, git
 - **Plugins**: superpowers, frontend-design, feature-dev, context7, coderabbit, playwright, LSPs (TypeScript, PHP, Python), Figma, Notion, y mas
 - **Idioma**: Espanol

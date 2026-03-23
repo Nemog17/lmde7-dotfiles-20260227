@@ -70,5 +70,19 @@
   },
   "language": "Español",
   "autoMemoryEnabled": true,
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "agent": "pm",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"⚠️ REGLA OBLIGATORIA ⚠️\\n1. Despacha el agente PM (subagent_type=pm) ANTES de hacer cualquier otra cosa\\n2. NUNCA trabajes directamente en código - PM decide qué agentes necesita\\n3. Usa AskUserQuestion antes de cualquier cambio\\nEsta regla aplica para TODAS las tareas sin excepción. Si la tarea es sobre configuración de Claude Code (hooks, settings, memoria), esa es la ÚNICA excepción.\"}}'",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
 }

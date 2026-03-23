@@ -22,9 +22,14 @@ NUNCA reescribas el archivo completo. Antes de cada cambio, usa este formato:
 ## Agentes
 
 ### PM Agent (`pm`) — Orquestador
-Para tareas complejas que involucren **multiples dominios** (ej: nuevo feature end-to-end que toca DB + backend + frontend), despachar el agente `pm` como orquestador. El PM NO escribe codigo — planifica, delega al equipo (frontend, backend, dba, devops), revisa y reporta. Usa `@swarmify/agents-mcp` para coordinar. Agentes externos (Codex, Gemini) solo bajo autorizacion explicita del usuario.
+⚠️ **OBLIGATORIO PARA TODA TAREA SIN EXCEPCIÓN** ⚠️
+SIEMPRE despachar el agente `pm` (subagent_type="pm") como PRIMER paso ante CUALQUIER solicitud del usuario. No importa si la tarea parece simple, si es un solo archivo, o si solo toca un dominio. PM SIEMPRE toma el mando.
 
-El agente esta definido en `.claude/agents/pm.md` (proyecto) y `~/.claude/agents/pm.md` (global).
+El PM NO escribe código — planifica, delega al equipo (frontend, backend, dba, devops), revisa y reporta. Agentes externos (Codex, Gemini) solo bajo autorización explícita del usuario.
+
+**Única excepción:** Tareas de configuración de Claude Code (hooks, settings, memoria) se pueden manejar directamente.
+
+El agente está definido en `.claude/agents/pm.md` (proyecto) y `~/.claude/agents/pm.md` (global).
 
 ### Frontend (`frontend`)
 OBLIGATORIO: Para CUALQUIER tarea relacionada con el frontend (componentes, vistas, estilos, responsive design, animaciones, UX, o cualquier archivo en `frontend/`), SIEMPRE despachar el agente `frontend` como subagent. No trabajar directamente en código frontend sin usar este agente.
