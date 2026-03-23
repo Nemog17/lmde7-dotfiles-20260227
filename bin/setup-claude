@@ -1,0 +1,321 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ============================================================================
+# setup-claude: Instala skills, MCP servers y agentes para Claude Code
+# Uso: cd tu-proyecto && setup-claude
+# Funciona en cualquier proyecto — detecta qué falta y te deja elegir
+# ============================================================================
+
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+BOLD='\033[1m'
+DIM='\033[2m'
+NC='\033[0m'
+
+log()  { echo -e "  ${GREEN}[+]${NC} $1"; }
+info() { echo -e "  ${BLUE}[i]${NC} $1"; }
+warn() { echo -e "  ${YELLOW}[!]${NC} $1"; }
+err()  { echo -e "  ${RED}[x]${NC} $1"; }
+skip() { echo -e "  ${DIM}[=] $1 (ya instalado)${NC}"; }
+
+PROJECT_DIR="$PWD"
+
+echo ""
+echo -e "${BOLD}========================================${NC}"
+echo -e "${BOLD}  Claude Code Project Setup${NC}"
+echo -e "${BOLD}========================================${NC}"
+echo -e "  Proyecto: $PROJECT_DIR"
+echo ""
+
+# --- Verificar que estamos en un proyecto ---
+if [[ ! -d ".git" ]]; then
+    warn "No es un repo git. Algunas opciones pueden no funcionar."
+fi
+
+# ============================================================================
+# Deteccion de lo que ya esta instalado
+# ============================================================================
+
+has_skill() {
+    local name="$1"
+    [[ -d ".agents/skills/$name" ]] || [[ -d ".claude/skills/$name" ]]
+}
+
+has_mcp() {
+    local name="$1"
+    [[ -f ".mcp.json" ]] && grep -q "\"$name\"" .mcp.json 2>/dev/null
+}
+
+has_agents() {
+    [[ -d ".claude/agents" ]] && [[ -n "$(ls -A .claude/agents/ 2>/dev/null)" ]]
+}
+
+has_command() {
+    command -v "$1" &>/dev/null
+}
+
+# ============================================================================
+# Menu de seleccion
+# ============================================================================
+
+echo -e "${BOLD}Que quieres instalar?${NC}"
+echo ""
+echo -e "${BOLD}  Skills (se instalan en el proyecto)${NC}"
+
+# Skill: emil-design-eng
+if has_skill "emil-design-eng"; then
+    echo -e "  ${DIM}[=] 1) emil-design-eng — ya instalado${NC}"
+    SKILL_EMIL="installed"
+else
+    echo "  [ ] 1) emil-design-eng — diseno UI, animaciones, micro-interacciones (Emil Kowalski)"
+    SKILL_EMIL="available"
+fi
+
+# Skill: shadcn
+if has_skill "shadcn"; then
+    echo -e "  ${DIM}[=] 2) shadcn — ya instalado${NC}"
+    SKILL_SHADCN="installed"
+else
+    echo "  [ ] 2) shadcn — patrones shadcn/ui, theming, componentes, CLI"
+    SKILL_SHADCN="available"
+fi
+
+echo ""
+echo -e "${BOLD}  MCP Servers (se configuran en .mcp.json)${NC}"
+
+# MCP: shadcn
+if has_mcp "shadcn"; then
+    echo -e "  ${DIM}[=] 3) shadcn MCP — ya configurado${NC}"
+    MCP_SHADCN="installed"
+else
+    echo "  [ ] 3) shadcn MCP — buscar e instalar componentes de registries"
+    MCP_SHADCN="available"
+fi
+
+# MCP: agents-mcp (Swarmify)
+if has_mcp "agents-mcp"; then
+    echo -e "  ${DIM}[=] 4) Swarmify agents-mcp — ya configurado${NC}"
+    MCP_SWARMIFY="installed"
+else
+    echo "  [ ] 4) Swarmify agents-mcp — orquestar agentes externos (Codex, Gemini)"
+    MCP_SWARMIFY="available"
+fi
+
+# MCP: Context7
+echo ""
+echo -e "${BOLD}  Context7 (documentacion de librerias via MCP)${NC}"
+echo "  [ ] 5) Context7 setup — autenticacion OAuth + config para Claude Code"
+echo -e "         ${DIM}(interactivo — abre navegador para OAuth)${NC}"
+
+echo ""
+echo -e "${BOLD}  Agentes (se copian a .claude/agents/)${NC}"
+
+# Agentes
+if has_agents; then
+    echo -e "  ${DIM}[=] 6) Agentes del equipo — ya instalados${NC}"
+    AGENTS="installed"
+else
+    echo "  [ ] 6) Agentes del equipo — PM, Frontend, Backend, DBA, DevOps"
+    AGENTS="available"
+fi
+
+echo ""
+echo -e "${BOLD}  CLI Tools${NC}"
+
+# gh
+if has_command "gh"; then
+    echo -e "  ${DIM}[=] 7) GitHub CLI (gh) — ya instalado${NC}"
+    CLI_GH="installed"
+else
+    echo "  [ ] 7) GitHub CLI (gh) — PRs, issues, workflows, secrets"
+    CLI_GH="available"
+fi
+
+# wrangler
+if has_command "wrangler" || [[ -f "node_modules/.bin/wrangler" ]]; then
+    echo -e "  ${DIM}[=] 8) Wrangler CLI — ya instalado${NC}"
+    CLI_WRANGLER="installed"
+else
+    echo "  [ ] 8) Wrangler CLI — Cloudflare Workers, Pages, R2, Containers"
+    CLI_WRANGLER="available"
+fi
+
+# neonctl
+if has_command "neonctl"; then
+    echo -e "  ${DIM}[=] 9) Neon CLI (neonctl) — ya instalado${NC}"
+    CLI_NEON="installed"
+else
+    echo "  [ ] 9) Neon CLI (neonctl) — PostgreSQL branches, SQL, connection strings"
+    CLI_NEON="available"
+fi
+
+echo ""
+echo -e "  ${BOLD}Opciones rapidas:${NC}"
+echo "  a) Todo lo que falta"
+echo "  s) Solo skills"
+echo "  m) Solo MCP servers"
+echo "  c) Solo CLI tools"
+echo "  q) Salir"
+echo ""
+read -rp "Elige (numeros separados por espacio, o letra): " choices
+
+if [[ "$choices" == "q" ]]; then
+    echo "Saliendo."
+    exit 0
+fi
+
+# Expandir opciones rapidas
+case "$choices" in
+    a) choices="1 2 3 4 5 6 7 8 9" ;;
+    s) choices="1 2" ;;
+    m) choices="3 4 5" ;;
+    c) choices="7 8 9" ;;
+esac
+
+echo ""
+
+# ============================================================================
+# Instalacion
+# ============================================================================
+
+for choice in $choices; do
+    case "$choice" in
+        1)
+            if [[ "$SKILL_EMIL" == "installed" ]]; then
+                skip "emil-design-eng"
+            else
+                info "Instalando skill emil-design-eng..."
+                npx skills add emilkowalski/skill -y 2>&1 | tail -5
+                log "emil-design-eng instalado"
+            fi
+            ;;
+        2)
+            if [[ "$SKILL_SHADCN" == "installed" ]]; then
+                skip "shadcn"
+            else
+                info "Instalando skill shadcn..."
+                npx skills add shadcn/ui -y 2>&1 | tail -5
+                log "shadcn instalado"
+            fi
+            ;;
+        3)
+            if [[ "$MCP_SHADCN" == "installed" ]]; then
+                skip "shadcn MCP"
+            else
+                info "Configurando shadcn MCP..."
+                npx shadcn@latest mcp init --client claude 2>&1 | tail -3
+                log "shadcn MCP configurado en .mcp.json"
+            fi
+            ;;
+        4)
+            if [[ "$MCP_SWARMIFY" == "installed" ]]; then
+                skip "Swarmify agents-mcp"
+            else
+                info "Configurando Swarmify agents-mcp..."
+                # Crear o actualizar .mcp.json
+                if [[ -f ".mcp.json" ]]; then
+                    # Agregar al existente usando jq o python
+                    if has_command jq; then
+                        tmp=$(mktemp)
+                        jq '.mcpServers["agents-mcp"] = {"command": "npx", "args": ["@swarmify/agents-mcp@latest"]}' .mcp.json > "$tmp" && mv "$tmp" .mcp.json
+                    else
+                        python3 -c "
+import json
+with open('.mcp.json') as f: data = json.load(f)
+data.setdefault('mcpServers', {})['agents-mcp'] = {'command': 'npx', 'args': ['@swarmify/agents-mcp@latest']}
+with open('.mcp.json', 'w') as f: json.dump(data, f, indent=2)
+"
+                    fi
+                else
+                    cat > .mcp.json << 'MCPEOF'
+{
+  "mcpServers": {
+    "agents-mcp": {
+      "command": "npx",
+      "args": ["@swarmify/agents-mcp@latest"]
+    }
+  }
+}
+MCPEOF
+                fi
+                log "Swarmify agents-mcp configurado en .mcp.json"
+            fi
+            ;;
+        5)
+            info "Lanzando Context7 setup (interactivo)..."
+            echo -e "  ${YELLOW}Esto abrira tu navegador para OAuth.${NC}"
+            npx ctx7 setup --claude || warn "Context7 setup requiere interaccion manual"
+            ;;
+        6)
+            if [[ "$AGENTS" == "installed" ]]; then
+                skip "Agentes del equipo"
+            else
+                info "Instalando agentes del equipo..."
+                DOTFILES_AGENTS="$HOME/dotfiles/claude/agents"
+                if [[ -d "$DOTFILES_AGENTS" ]]; then
+                    mkdir -p .claude/agents
+                    for agent in "$DOTFILES_AGENTS"/*.md; do
+                        name="$(basename "$agent")"
+                        cp "$agent" ".claude/agents/$name"
+                        log "Agent: $name"
+                    done
+                else
+                    warn "No se encontro ~/dotfiles/claude/agents/"
+                    warn "Clona los dotfiles primero: git clone https://github.com/Nemog17/lmde7-dotfiles-20260227.git ~/dotfiles"
+                fi
+            fi
+            ;;
+        7)
+            if [[ "$CLI_GH" == "installed" ]]; then
+                skip "GitHub CLI"
+            else
+                info "Instalando GitHub CLI..."
+                if has_command apt-get; then
+                    (type -p wget >/dev/null || sudo apt-get install wget -y) \
+                    && sudo mkdir -p -m 755 /etc/apt/keyrings \
+                    && out=$(mktemp) && wget -qO "$out" https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+                    && cat "$out" | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
+                    && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+                    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+                    && sudo apt-get update && sudo apt-get install gh -y
+                    log "GitHub CLI instalado. Ejecuta: gh auth login"
+                else
+                    warn "Instala gh manualmente: https://cli.github.com/"
+                fi
+            fi
+            ;;
+        8)
+            if [[ "$CLI_WRANGLER" == "installed" ]]; then
+                skip "Wrangler CLI"
+            else
+                info "Instalando Wrangler CLI..."
+                npm install -g wrangler 2>&1 | tail -3
+                log "Wrangler instalado"
+            fi
+            ;;
+        9)
+            if [[ "$CLI_NEON" == "installed" ]]; then
+                skip "Neon CLI"
+            else
+                info "Instalando Neon CLI..."
+                npm install -g neonctl 2>&1 | tail -3
+                log "Neon CLI instalado. Configura: neonctl auth"
+            fi
+            ;;
+        *)
+            warn "Opcion '$choice' no reconocida, saltando"
+            ;;
+    esac
+    echo ""
+done
+
+echo -e "${BOLD}========================================${NC}"
+echo -e "${BOLD}  Setup completado${NC}"
+echo -e "${BOLD}========================================${NC}"
+echo ""
+echo "Reinicia Claude Code para que cargue los MCP servers nuevos."
+echo "Usa /mcp dentro de Claude Code para verificar conexiones."
+echo ""
