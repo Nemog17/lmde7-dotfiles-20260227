@@ -153,6 +153,19 @@ else
 fi
 
 echo ""
+echo -e "${BOLD}  Claude HUD${NC}"
+
+# HUD
+HUD_DIR="$HOME/.claude/plugins/cache/claude-hud"
+if [[ -d "$HUD_DIR" ]] && [[ -n "$(ls -A "$HUD_DIR" 2>/dev/null)" ]]; then
+    echo -e "  ${DIM}[=] 10) Claude HUD — ya instalado${NC}"
+    HUD="installed"
+else
+    echo "  [ ] 10) Claude HUD — statusline con info de sesion, tokens, modelo, git"
+    HUD="available"
+fi
+
+echo ""
 echo -e "  ${BOLD}Opciones rapidas:${NC}"
 echo "  a) Todo lo que falta"
 echo "  s) Solo skills"
@@ -169,7 +182,7 @@ fi
 
 # Expandir opciones rapidas
 case "$choices" in
-    a) choices="1 2 3 4 5 6 7 8 9" ;;
+    a) choices="1 2 3 4 5 6 7 8 9 10" ;;
     s) choices="1 2" ;;
     m) choices="3 4 5" ;;
     c) choices="7 8 9" ;;
@@ -305,6 +318,41 @@ MCPEOF
                 log "Neon CLI instalado. Configura: neonctl auth"
             fi
             ;;
+        10)
+            if [[ "$HUD" == "installed" ]]; then
+                skip "Claude HUD"
+            else
+                info "Instalando Claude HUD..."
+                local claude_dir="$HOME/.claude"
+                local hud_marketplace="$claude_dir/plugins/marketplaces/claude-hud"
+                local hud_cache="$claude_dir/plugins/cache/claude-hud/claude-hud"
+
+                mkdir -p "$claude_dir/plugins/cache" "$claude_dir/plugins/marketplaces" "$HOME/.cache/tmp"
+
+                if [[ -d "$hud_marketplace/.git" ]]; then
+                    git -C "$hud_marketplace" pull --ff-only -q 2>/dev/null || true
+                else
+                    rm -rf "$hud_marketplace"
+                    TMPDIR="$HOME/.cache/tmp" git clone -q https://github.com/jarrodwatts/claude-hud.git "$hud_marketplace" || {
+                        warn "No se pudo clonar claude-hud"
+                        continue
+                    }
+                fi
+
+                local version
+                version=$(grep -Po '"version": "\K[^"]*' "$hud_marketplace/package.json" 2>/dev/null || echo "0.0.10")
+                mkdir -p "$hud_cache/$version"
+                cp -r "$hud_marketplace"/* "$hud_cache/$version/"
+
+                # Build si tiene package.json con build script
+                if [[ -f "$hud_cache/$version/package.json" ]] && grep -q '"build"' "$hud_cache/$version/package.json" 2>/dev/null; then
+                    (cd "$hud_cache/$version" && npm install --silent 2>/dev/null && npm run build --silent 2>/dev/null) || true
+                fi
+
+                log "Claude HUD v$version instalado"
+                info "El statusLine ya esta configurado en settings.json"
+            fi
+            ;;
         *)
             warn "Opcion '$choice' no reconocida, saltando"
             ;;
@@ -312,10 +360,36 @@ MCPEOF
     echo ""
 done
 
+# --- Siempre sincronizar settings.json (config de Claude Code) ---
+echo -e "${BLUE}[*]${NC} Sincronizando configuracion de Claude Code..."
+DOTFILES_DIR_RESOLVE="$(cd "$(dirname "$0")/.." && pwd)"
+SETTINGS_SRC="$DOTFILES_DIR_RESOLVE/claude/settings/settings.json"
+SETTINGS_DST="$HOME/.claude/settings.json"
+
+if [[ -f "$SETTINGS_SRC" ]]; then
+    if [[ -f "$SETTINGS_DST" ]]; then
+        # Solo sobrescribir si son diferentes
+        if ! diff -q "$SETTINGS_SRC" "$SETTINGS_DST" &>/dev/null; then
+            cp "$SETTINGS_DST" "$SETTINGS_DST.bak"
+            cp "$SETTINGS_SRC" "$SETTINGS_DST"
+            log "settings.json actualizado (backup en settings.json.bak)"
+        else
+            skip "settings.json ya esta sincronizado"
+        fi
+    else
+        cp "$SETTINGS_SRC" "$SETTINGS_DST"
+        log "settings.json instalado"
+    fi
+else
+    warn "No se encontro $SETTINGS_SRC"
+fi
+
+echo ""
 echo -e "${BOLD}========================================${NC}"
 echo -e "${BOLD}  Setup completado${NC}"
 echo -e "${BOLD}========================================${NC}"
 echo ""
 echo "Reinicia Claude Code para que cargue los MCP servers nuevos."
 echo "Usa /mcp dentro de Claude Code para verificar conexiones."
+echo "Usa 'agents' para ver los agentes instalados."
 echo ""
