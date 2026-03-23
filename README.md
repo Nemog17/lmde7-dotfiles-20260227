@@ -50,33 +50,39 @@ claude/
 ```
                 USUARIO
                   |
-              PM AGENT (Opus)
+          🎯 PM AGENT (Opus)
              /    |    \     \
-       Frontend Backend DBA  DevOps       Equipo interno (Sonnet)
+    🎨 Frontend ⚙️ Backend 🗄️ DBA 🚀 DevOps    Equipo interno (Sonnet)
        - - - - - - - - - - - - - - - -
-       Codex            Gemini            Externos (solo si autorizas)
+       Codex            Gemini                   Externos (solo si autorizas)
        (refactors)      (prototipos)
 ```
 
-### PM Agent — El orquestador (OBLIGATORIO)
+### 🎯 PM Agent — El orquestador (OBLIGATORIO)
 
 PM es el agente principal de TODA sesion. Se configura automaticamente via `"agent": "pm"` en settings.json + un hook `UserPromptSubmit` que refuerza la regla en cada prompt.
 
 No escribe codigo. Planifica, delega, revisa y coordina. Se comunica con el usuario en espanol simple y con los agentes en tecnicismos precisos como un Staff Engineer.
 
-**Flujo**: Recibir tarea -> Reconocimiento -> Planificar -> Ejecutar -> Revisar -> Reportar
+**Paso cero**: Lee CLAUDE.md (proyecto + global) ANTES de cualquier otra cosa — nunca delega sin conocer las reglas.
 
-**Orden de dependencias**: DBA (schema) -> Backend (APIs) -> Frontend (UI) -> DevOps (deploy)
+**Identidad visual**: Siempre se identifica con banner `🎯 PM Agent` y reporta con citas del equipo (`> 🎨 Frontend Agent: ...`).
+
+**Delegacion**: NUNCA lee archivos de codigo directamente. Delega toda investigacion al agente apropiado y sintetiza los reportes.
+
+**Flujo**: Leer CLAUDE.md -> Analizar dominios -> Delegar investigacion -> Sintetizar reportes -> Planificar -> Ejecutar -> Revisar -> Reportar
+
+**Orden de dependencias**: 🗄️ DBA (schema) -> ⚙️ Backend (APIs) -> 🎨 Frontend (UI) -> 🚀 DevOps (deploy)
 
 ### Agentes especializados
 
-| Agente | Modelo | Dominio | Herramientas |
-|--------|--------|---------|-------------|
-| **PM** | Opus | Coordinacion, arquitectura | Swarmify MCP |
-| **Frontend** | Sonnet | Vue.js 3, Tailwind, Basecoat, mobile-first | shadcn MCP, Vuetify MCP, Context7, skills (emil-design-eng, shadcn) |
-| **Backend** | Sonnet | Laravel 12, GraphQL (Lighthouse), Actions, Sanctum, Spatie | Laravel Boost MCP, Context7 |
-| **DBA** | Sonnet | PostgreSQL, multi-tenancy, migraciones, indexes, constraints | Neon MCP (branches, SQL, schemas) |
-| **DevOps** | Sonnet | Cloudflare (Workers/Containers/Pages/R2), GitHub Actions, Docker | gh, wrangler, neonctl CLIs |
+| Agente | Emoji | Modelo | Dominio | Herramientas |
+|--------|-------|--------|---------|-------------|
+| **PM** | 🎯 | Opus | Coordinacion, arquitectura | Swarmify MCP |
+| **Frontend** | 🎨 | Sonnet | Vue.js 3, Tailwind, Basecoat, mobile-first | shadcn MCP, Vuetify MCP, Context7, skills (emil-design-eng, shadcn) |
+| **Backend** | ⚙️ | Sonnet | Laravel 12, GraphQL (Lighthouse), Actions, Sanctum, Spatie | Laravel Boost MCP, Context7 |
+| **DBA** | 🗄️ | Sonnet | PostgreSQL, multi-tenancy, migraciones, indexes, constraints | Neon MCP (branches, SQL, schemas) |
+| **DevOps** | 🚀 | Sonnet | Cloudflare (Workers/Containers/Pages/R2), GitHub Actions, Docker | gh, wrangler, neonctl CLIs |
 
 ### Agentes externos (bajo autorizacion)
 
