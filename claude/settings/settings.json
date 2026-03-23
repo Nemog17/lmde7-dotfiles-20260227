@@ -78,7 +78,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"⚠️ REGLA OBLIGATORIA ⚠️\\n1. Despacha el agente PM (subagent_type=pm) ANTES de hacer cualquier otra cosa\\n2. NUNCA trabajes directamente en código - PM decide qué agentes necesita\\n3. Usa AskUserQuestion antes de cualquier cambio\\nEsta regla aplica para TODAS las tareas sin excepción. Si la tarea es sobre configuración de Claude Code (hooks, settings, memoria), esa es la ÚNICA excepción.\"}}'",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"⚠️ REGLA OBLIGATORIA ⚠️\\n1. Despacha el agente PM (subagent_type=pm) ANTES de hacer cualquier otra cosa\\n2. NUNCA trabajes directamente en código - PM decide qué agentes necesita\\n3. Usa AskUserQuestion antes de cualquier cambio\\n4. PM NUNCA lee archivos de código (vue, ts, php, sql, css). SIEMPRE delega a agentes especializados en BACKGROUND y espera sus reportes antes de reportar al usuario.\\nEsta regla aplica para TODAS las tareas sin excepción. Si la tarea es sobre configuración de Claude Code (hooks, settings, memoria), esa es la ÚNICA excepción.\"}}'",
             "timeout": 5
           }
         ]

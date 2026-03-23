@@ -161,7 +161,7 @@ Claude Code se lanza con: `--permission-mode plan --effort max`
 Se sincroniza automaticamente. Incluye:
 
 - **Agent**: `pm` — PM arranca como agente principal en cada sesion
-- **Hook**: `UserPromptSubmit` — inyecta recordatorio obligatorio de usar PM en cada prompt
+- **Hook**: `UserPromptSubmit` — inyecta 4 reglas obligatorias en cada prompt: (1) usar PM, (2) no trabajar directo en código, (3) usar AskUserQuestion, (4) PM NUNCA lee código — siempre delega a agentes en background
 - **HUD**: Statusline con info de sesion, tokens, modelo, git
 - **Plugins**: superpowers, frontend-design, feature-dev, context7, coderabbit, playwright, LSPs (TypeScript, PHP, Python), Figma, Notion, y mas
 - **Idioma**: Espanol
