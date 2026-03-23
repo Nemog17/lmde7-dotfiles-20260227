@@ -1,6 +1,6 @@
 # Dotfiles — LMDE 7 Dev Environment
 
-Configuracion completa de entorno de desarrollo para Linux Mint Debian Edition 7.
+Configuracion completa de entorno de desarrollo para Linux Mint Debian Edition 7. Incluye workspace tmux, Claude Code con equipo de agentes AI, y herramientas de desarrollo.
 
 ## Quick Start
 
@@ -9,87 +9,151 @@ git clone https://github.com/Nemog17/lmde7-dotfiles-20260227.git ~/dotfiles
 ~/dotfiles/install.sh
 ```
 
+En una nueva terminal:
+
+```bash
+cd tu-proyecto
+setup-claude        # Instala skills, MCPs, agentes, HUD, CLIs
+code                # Abre workspace tmux
+```
+
 ## Que incluye
 
 ### Scripts (`bin/`)
 
 | Script | Descripcion |
 |--------|-------------|
-| `code` | Abre un workspace tmux con 4 panes: Claude Code, Yazi, Lazygit, Lazydocker |
-| `setup-dev-env` | Instala entorno de desarrollo completo (tmux, Kitty, Claude + HUD, Yazi, Lazygit, Lazydocker) |
-| `setup-claude` | Instala skills, MCP servers, agentes y CLI tools en cualquier proyecto |
-| `agents` | Ver y gestionar agentes de Claude Code (`agents list`, `agents info pm`) |
-| `setup-rentacar` | Clona y levanta el proyecto rentacar-modern con Docker |
+| `code` | Workspace tmux: Claude Code + Yazi + Lazygit + Lazydocker (4 panes) |
+| `setup-dev-env` | Instala entorno completo: tmux, Kitty, Claude Code + HUD, Yazi, Lazygit, Lazydocker |
+| `setup-claude` | Instala skills, MCP servers, agentes, CLI tools y HUD en cualquier proyecto |
+| `agents` | Ver y gestionar agentes (`agents list`, `agents info pm`, `agents project`) |
+| `setup-rentacar` | Clona y levanta rentacar-modern con Docker |
 | `migrate-vm` | Migra VMs (QEMU/libvirt) entre distros |
 
 ### Claude Code (`claude/`)
 
-Configuracion completa de Claude Code con equipo de agentes especializados:
-
 ```
 claude/
-├── CLAUDE.md              # Instrucciones globales (se copia a ~/.claude/)
+├── CLAUDE.md                 # Instrucciones globales + routing de agentes
+├── settings/
+│   └── settings.json         # Config completa: HUD, plugins, permisos, idioma
 └── agents/
-    ├── pm.md              # PM Agent — orquestador (Opus)
-    ├── frontend.md        # Frontend — Vue.js, Tailwind, mobile-first (Sonnet)
-    ├── backend.md         # Backend — Laravel 12, GraphQL, Actions (Sonnet)
-    ├── dba.md             # DBA — PostgreSQL, migraciones, Neon (Sonnet)
-    └── devops.md          # DevOps — Cloudflare, CI/CD, Docker (Sonnet)
+    ├── pm.md                 # PM Agent — orquestador (Opus, max effort)
+    ├── frontend.md           # Frontend — Vue.js, Tailwind, mobile-first (Sonnet)
+    ├── backend.md            # Backend — Laravel 12, GraphQL, Actions (Sonnet)
+    ├── dba.md                # DBA — PostgreSQL, Neon, multi-tenancy (Sonnet)
+    └── devops.md             # DevOps — Cloudflare, CI/CD, Docker (Sonnet)
 ```
 
-#### Estructura de agentes
+## Arquitectura de agentes
 
 ```
-              USUARIO
-                |
-            PM AGENT (Opus)
-           /    |    \     \
-     Frontend Backend DBA  DevOps     Equipo interno (Sonnet)
-     - - - - - - - - - - - - - - -
-     Codex          Gemini            Externos (solo si autorizas)
+                USUARIO
+                  |
+              PM AGENT (Opus)
+             /    |    \     \
+       Frontend Backend DBA  DevOps       Equipo interno (Sonnet)
+       - - - - - - - - - - - - - - - -
+       Codex            Gemini            Externos (solo si autorizas)
+       (refactors)      (prototipos)
 ```
 
-- **PM Agent**: No escribe codigo. Planifica, delega, revisa y coordina. Habla con el usuario en espanol simple y con los agentes en tecnicismos precisos.
-- **Frontend**: Vue.js 3, Tailwind CSS, shadcn/Basecoat, mobile-first, Context7 para docs.
-- **Backend**: Laravel 12, GraphQL (Lighthouse), Actions, Sanctum, Spatie, Neon MCP.
-- **DBA**: PostgreSQL, multi-tenancy, EXCLUDE constraints, pg_trgm, materialized views, Neon branches.
-- **DevOps**: Cloudflare Workers/Containers/Pages/R2, GitHub Actions, Docker, wrangler/gh/neonctl CLIs.
+### PM Agent — El orquestador
 
-#### MCP Servers utilizados
+No escribe codigo. Planifica, delega, revisa y coordina. Se comunica con el usuario en espanol simple y con los agentes en tecnicismos precisos como un Staff Engineer.
 
-- **shadcn MCP**: Buscar e instalar componentes de shadcn/ui
-- **Vuetify MCP**: Referencia de componentes Vue
-- **Neon MCP**: Gestion de PostgreSQL serverless (branches, SQL, schemas)
-- **Laravel Boost MCP**: Inspeccion de modelos y rutas Laravel
-- **Context7**: Documentacion actualizada de cualquier libreria
-- **Swarmify Agents MCP**: Orquestacion de agentes externos (Codex, Gemini)
+**Flujo**: Recibir tarea -> Reconocimiento -> Planificar -> Ejecutar -> Revisar -> Reportar
 
-#### Skills instalados
+**Orden de dependencias**: DBA (schema) -> Backend (APIs) -> Frontend (UI) -> DevOps (deploy)
 
-- **emil-design-eng**: Filosofia de diseno UI, animaciones, micro-interacciones
-- **shadcn**: Patrones y APIs de shadcn/ui, theming, OKLCH
+### Agentes especializados
 
-## Instalacion
+| Agente | Modelo | Dominio | Herramientas |
+|--------|--------|---------|-------------|
+| **PM** | Opus | Coordinacion, arquitectura | Swarmify MCP |
+| **Frontend** | Sonnet | Vue.js 3, Tailwind, Basecoat, mobile-first | shadcn MCP, Vuetify MCP, Context7, skills (emil-design-eng, shadcn) |
+| **Backend** | Sonnet | Laravel 12, GraphQL (Lighthouse), Actions, Sanctum, Spatie | Laravel Boost MCP, Context7 |
+| **DBA** | Sonnet | PostgreSQL, multi-tenancy, migraciones, indexes, constraints | Neon MCP (branches, SQL, schemas) |
+| **DevOps** | Sonnet | Cloudflare (Workers/Containers/Pages/R2), GitHub Actions, Docker | gh, wrangler, neonctl CLIs |
 
-El script `install.sh` hace todo automaticamente:
+### Agentes externos (bajo autorizacion)
+
+| Agente | Para que |
+|--------|---------|
+| **Codex CLI** | Refactorizar codigo, implementar features, resolver bugs |
+| **Gemini CLI** | Prototipos de diseno, previsualizacion de UI en local |
+
+## MCP Servers
+
+| MCP | Funcion |
+|-----|---------|
+| **shadcn** | Buscar e instalar componentes de shadcn/ui |
+| **Vuetify** | Referencia de componentes Vue |
+| **Neon** | PostgreSQL serverless: branches, SQL, schemas, queries lentos |
+| **Laravel Boost** | Inspeccion de modelos, rutas, schema Laravel |
+| **Context7** | Documentacion actualizada de cualquier libreria |
+| **Swarmify agents-mcp** | Orquestacion de agentes externos |
+
+## Skills
+
+| Skill | Funcion |
+|-------|---------|
+| **emil-design-eng** | Filosofia de diseno UI, animaciones, micro-interacciones (Emil Kowalski) |
+| **shadcn** | Patrones shadcn/ui, theming OKLCH, componentes, CLI, registries |
+
+## setup-claude — Menu interactivo
+
+Detecta que ya esta instalado y solo instala lo que falta. Funciona en cualquier proyecto.
+
+```
+Skills:     1) emil-design-eng    2) shadcn
+MCPs:       3) shadcn MCP         4) Swarmify agents-mcp    5) Context7
+Agentes:    6) PM, Frontend, Backend, DBA, DevOps
+CLIs:       7) gh                 8) wrangler               9) neonctl
+HUD:        10) Claude HUD
+
+Rapido:     a) todo    s) skills    m) MCPs    c) CLIs    q) salir
+```
+
+Siempre sincroniza `settings.json` al final (HUD, plugins, permisos, idioma).
+
+## install.sh — Que hace
 
 1. Crea symlinks de `bin/` a `~/.local/bin/`
-2. Agrega `~/.local/bin` al PATH
+2. Agrega `~/.local/bin` al PATH (`.bashrc` y `.zshrc`)
 3. Copia `CLAUDE.md` y agentes a `~/.claude/`
-4. Opcionalmente instala herramientas de desarrollo o VMs
+4. Copia `settings.json` a `~/.claude/` (con backup si ya existe)
+5. Menu: instalar entorno de desarrollo, VMs, o solo symlinks
 
-## Uso del workspace
+## Workspace tmux (`code`)
 
 ```bash
-# Abrir workspace en el directorio actual
-code
-
-# Abrir workspace en un directorio especifico
-code ~/rentacar-modern
+code                    # Directorio actual
+code ~/mi-proyecto      # Directorio especifico
 ```
 
-Esto abre tmux con 4 panes:
-- **Claude Code** (arriba izq) — AI assistant con agentes configurados
-- **Yazi** (arriba der) — file manager
-- **Lazygit** (abajo izq) — git TUI
-- **Lazydocker** (abajo der) — Docker TUI
+```
+┌──────────────────┬──────────────────┐
+│                  │                  │
+│   Claude Code    │      Yazi        │
+│   (AI assistant) │  (file manager)  │
+│                  │                  │
+├──────────────────┼──────────────────┤
+│                  │                  │
+│    Lazygit       │   Lazydocker     │
+│   (git TUI)      │  (Docker TUI)    │
+│                  │                  │
+└──────────────────┴──────────────────┘
+```
+
+Claude Code se lanza con: `--permission-mode plan --effort max`
+
+## Configuracion de Claude Code (`settings.json`)
+
+Se sincroniza automaticamente. Incluye:
+
+- **HUD**: Statusline con info de sesion, tokens, modelo, git
+- **Plugins**: superpowers, frontend-design, feature-dev, context7, coderabbit, playwright, LSPs (TypeScript, PHP, Python), Figma, Notion, y mas
+- **Idioma**: Espanol
+- **Auto-memory**: Habilitado
+- **Permisos**: Plan mode por defecto
