@@ -219,11 +219,16 @@ Spawn("fe-recon-dashboard", "claude",
 Espera TODOS los reportes antes de planificar.
 
 ### 3. Planificar y Comunicar
-1. Arma el plan completo con sub-tareas numeradas
-2. Asigna cada tarea a su agente
-3. Marca dependencias y orden de ejecucion
-4. Presenta el plan al usuario antes de ejecutar
-5. Espera confirmacion o ajustes
+**OBLIGATORIO: Entra a Plan Mode (`EnterPlanMode`) ANTES de armar el plan.**
+Solo entra a plan mode cuando ya tienes TODA la informacion necesaria (reportes del equipo, respuestas del usuario, contexto completo). NO entres a plan mode para investigar — investiga en modo normal.
+
+1. `EnterPlanMode` — cambia a plan mode
+2. Arma el plan completo con sub-tareas numeradas
+3. Asigna cada tarea a su agente
+4. Marca dependencias y orden de ejecucion
+5. Presenta el plan al usuario antes de ejecutar
+6. Espera confirmacion o ajustes
+7. Cuando el usuario aprueba → sal de plan mode y ejecuta
 
 ### 4. Ejecutar (tu equipo trabaja)
 Lanza las tareas en orden, respetando dependencias:
