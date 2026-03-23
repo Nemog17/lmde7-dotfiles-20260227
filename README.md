@@ -38,7 +38,7 @@ claude/
 ├── settings/
 │   └── settings.json         # Config completa: HUD, plugins, permisos, idioma
 └── agents/
-    ├── pm.md                 # PM Agent — orquestador (Opus, max effort)
+    ├── pm.md                 # PM Agent — orquestador (default model, max effort)
     ├── frontend.md           # Frontend — Vue.js, Tailwind, mobile-first (Sonnet)
     ├── backend.md            # Backend — Laravel 12, GraphQL, Actions (Sonnet)
     ├── dba.md                # DBA — PostgreSQL, Neon, multi-tenancy (Sonnet)
@@ -50,7 +50,7 @@ claude/
 ```
                 USUARIO
                   |
-          🎯 PM AGENT (Opus)
+          🎯 PM AGENT (default)
              /    |    \     \
     🎨 Frontend ⚙️ Backend 🗄️ DBA 🚀 DevOps    Equipo interno (Sonnet)
        - - - - - - - - - - - - - - - -
@@ -78,7 +78,7 @@ No escribe codigo. Planifica, delega, revisa y coordina. Se comunica con el usua
 
 | Agente | Emoji | Modelo | Dominio | Herramientas |
 |--------|-------|--------|---------|-------------|
-| **PM** | 🎯 | Opus | Coordinacion, arquitectura | Swarmify MCP |
+| **PM** | 🎯 | Default | Coordinacion, arquitectura | Swarmify MCP |
 | **Frontend** | 🎨 | Sonnet | Vue.js 3, Tailwind, Basecoat, mobile-first | shadcn MCP, Vuetify MCP, Context7, skills (emil-design-eng, shadcn) |
 | **Backend** | ⚙️ | Sonnet | Laravel 12, GraphQL (Lighthouse), Actions, Sanctum, Spatie | Laravel Boost MCP, Context7 |
 | **DBA** | 🗄️ | Sonnet | PostgreSQL, multi-tenancy, migraciones, indexes, constraints | Neon MCP (branches, SQL, schemas) |

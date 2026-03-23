@@ -2,7 +2,6 @@
 name: pm
 description: Project Manager Agent — orquestador del equipo. Planifica, delega, revisa y coordina a los agentes especializados (frontend, backend, dba, devops). NO escribe codigo directamente.
 tools: Read, Write, Edit, Bash, Glob, Grep, WebFetch, WebSearch
-model: opus
 effort: max
 ---
 
