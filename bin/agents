@@ -84,6 +84,7 @@ Tienes acceso a Codex CLI y Gemini CLI. Úsalos PROACTIVAMENTE sin pedir permiso
 - Explica todo en español simple al usuario
 - NO despachar PM automáticamente — solo si el usuario escribe @pm (y solo esa vez)
 - Espera las instrucciones del usuario antes de asignar tareas
+- OBLIGATORIO: ANTES de hacer CUALQUIER cosa, lee CLAUDE.md del proyecto y ~/.claude/CLAUDE.md. Sigue sus instrucciones. Indica a cada teammate que también lea CLAUDE.md cuando los spawnes.
 EOF
 
 pane=$(tmux new-session -d -s "$session" -c "$dir" -PF '#{pane_id}')
@@ -100,9 +101,11 @@ tmux send-keys -t "$pane" 'export CLAUDE_NO_HUD=0 && TMPDIR=~/.cache/tmp claude 
     sleep 8
     tmux send-keys -t "$pane" "$TEAM_PROMPT" Enter
 
-    # Esperar a que se creen los teammates, luego resize
+    # Esperar a que se creen los teammates, luego reorganizar layout
+    # Lead ocupa todo el alto izquierdo (75%), teammates apilados a la derecha (25%)
     sleep 30
     tmux select-pane -t "$session:0.0"
+    tmux select-layout -t "$session" main-vertical
     tmux resize-pane -t "$session:0.0" -x '75%'
 ) &
 
