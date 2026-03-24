@@ -1,119 +1,107 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ============================================================================
-# agents: Ver y gestionar agentes de Claude Code
-# Uso: agents [list|info <name>|global|project]
-# ============================================================================
+# --- agents: tmux agent-team Claude launcher ---
+# Usage: agents [directory]
+# Lanza Claude con agent teams en paneles tmux.
+# Temporalmente desactiva agent:pm para que Claude pueda crear teams.
+# Panel principal más ancho + HUD solo en panel principal.
 
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-BOLD='\033[1m'
-DIM='\033[2m'
-NC='\033[0m'
+dir="${1:-$PWD}"
 
-GLOBAL_DIR="$HOME/.claude/agents"
-PROJECT_DIR=".claude/agents"
+if [[ ! -d "$dir" ]]; then
+    echo "Error: '$dir' no es un directorio válido" >&2
+    exit 1
+fi
 
-show_agent() {
-    local file="$1"
-    local name model desc
-    name=$(grep '^name:' "$file" | head -1 | sed 's/name: *//')
-    model=$(grep '^model:' "$file" | head -1 | sed 's/model: *//')
-    desc=$(grep '^description:' "$file" | head -1 | sed 's/description: *//')
-    effort=$(grep '^effort:' "$file" | head -1 | sed 's/effort: *//')
+dir="$(cd "$dir" && pwd)"
 
-    if [[ -n "$effort" ]]; then
-        model="$model ($effort)"
-    fi
+session="agents-$(date +%Y-%m-%d)"
+if tmux has-session -t "=$session" 2>/dev/null; then
+    session="agents-$(date +%Y-%m-%d_%H-%M-%S)"
+fi
 
-    printf "  ${GREEN}%-12s${NC} ${DIM}%-18s${NC} %s\n" "$name" "[$model]" "$desc"
-}
+if ! command -v tmux &>/dev/null; then
+    echo "Error: tmux no está instalado" >&2
+    exit 1
+fi
 
-list_agents() {
-    echo ""
-    echo -e "${BOLD}Agentes del proyecto${NC} ($PROJECT_DIR/)"
-    if [[ -d "$PROJECT_DIR" ]] && [[ -n "$(ls -A "$PROJECT_DIR" 2>/dev/null)" ]]; then
-        for f in "$PROJECT_DIR"/*.md; do
-            show_agent "$f"
-        done
+# --- Manejar conflicto agent:pm ---
+SETTINGS_FILE="$dir/.claude/settings.local.json"
+SETTINGS_BAK="$dir/.claude/settings.local.json.teams-bak"
+NEEDS_RESTORE=false
+
+if [[ -f "$SETTINGS_FILE" ]] && grep -q '"agent"' "$SETTINGS_FILE"; then
+    cp "$SETTINGS_FILE" "$SETTINGS_BAK"
+    NEEDS_RESTORE=true
+    if command -v jq &>/dev/null; then
+        jq 'del(.agent)' "$SETTINGS_BAK" > "$SETTINGS_FILE"
     else
-        echo -e "  ${DIM}(ninguno)${NC}"
+        sed '/"agent"/d' "$SETTINGS_BAK" > "$SETTINGS_FILE"
     fi
+fi
 
-    echo ""
-    echo -e "${BOLD}Agentes globales${NC} ($GLOBAL_DIR/)"
-    if [[ -d "$GLOBAL_DIR" ]] && [[ -n "$(ls -A "$GLOBAL_DIR" 2>/dev/null)" ]]; then
-        for f in "$GLOBAL_DIR"/*.md; do
-            show_agent "$f"
-        done
-    else
-        echo -e "  ${DIM}(ninguno)${NC}"
+# Restaurar settings al salir (ctrl+c, exit, etc)
+cleanup() {
+    if [[ "$NEEDS_RESTORE" == true ]] && [[ -f "$SETTINGS_BAK" ]]; then
+        mv "$SETTINGS_BAK" "$SETTINGS_FILE"
     fi
-    echo ""
 }
+trap cleanup EXIT
 
-show_info() {
-    local name="$1"
-    local file=""
+# Prompt para crear el team automáticamente
+read -r -d '' TEAM_PROMPT << 'EOF' || true
+Crea un agent team para este proyecto con estos 4 teammates:
 
-    # Buscar en proyecto primero, luego global
-    if [[ -f "$PROJECT_DIR/$name.md" ]]; then
-        file="$PROJECT_DIR/$name.md"
-        echo -e "${BLUE}[proyecto]${NC} $file"
-    elif [[ -f "$GLOBAL_DIR/$name.md" ]]; then
-        file="$GLOBAL_DIR/$name.md"
-        echo -e "${BLUE}[global]${NC} $file"
-    else
-        echo "Agente '$name' no encontrado."
-        exit 1
-    fi
+1. **Frontend** (Opus): Ingeniero frontend senior. Vue.js 3, Tailwind CSS, shadcn/Basecoat, mobile-first. Usa skills frontend-design y emil-design-eng para diseño de alta calidad. Usa shadcn MCP y Context7 (OpenUI, Vue, Tailwind). Diseña PRIMERO para móvil, luego adapta a desktop.
 
-    echo ""
-    cat "$file"
-}
+2. **Backend** (Sonnet): Ingeniero backend senior. Laravel 12, GraphQL (Lighthouse), PostgreSQL (Neon), Sanctum, Spatie. Actions como lógica de negocio. Usa Laravel Boost MCP, Neon MCP y Context7 (Laravel, Lighthouse).
 
-case "${1:-list}" in
-    list|ls)
-        list_agents
-        ;;
-    info|show)
-        if [[ -z "${2:-}" ]]; then
-            echo "Uso: agents info <nombre>"
-            exit 1
-        fi
-        show_info "$2"
-        ;;
-    global)
-        echo ""
-        echo -e "${BOLD}Agentes globales${NC} ($GLOBAL_DIR/)"
-        if [[ -d "$GLOBAL_DIR" ]]; then
-            for f in "$GLOBAL_DIR"/*.md; do show_agent "$f"; done
-        fi
-        echo ""
-        ;;
-    project)
-        echo ""
-        echo -e "${BOLD}Agentes del proyecto${NC} ($PROJECT_DIR/)"
-        if [[ -d "$PROJECT_DIR" ]]; then
-            for f in "$PROJECT_DIR"/*.md; do show_agent "$f"; done
-        fi
-        echo ""
-        ;;
-    help|--help|-h)
-        echo "agents — Ver y gestionar agentes de Claude Code"
-        echo ""
-        echo "Uso:"
-        echo "  agents              Listar todos los agentes"
-        echo "  agents list         Listar todos los agentes"
-        echo "  agents info <name>  Ver detalle de un agente"
-        echo "  agents global       Solo agentes globales"
-        echo "  agents project      Solo agentes del proyecto"
-        ;;
-    *)
-        echo "Comando no reconocido: $1"
-        echo "Usa: agents help"
-        exit 1
-        ;;
-esac
+3. **DBA** (Sonnet): DBA senior. PostgreSQL, multi-tenancy (BelongsToTenant), migraciones, indexes, EXCLUDE constraints, pg_trgm. Usa Neon MCP para queries, schemas y branches. Migraciones destructivas requieren confirmación del usuario.
+
+4. **DevOps** (Sonnet): Ingeniero DevOps senior. Cloudflare (Workers, Containers, Pages, R2), GitHub Actions, Docker, Neon branches. NUNCA tocar producción sin confirmar. Usa gh CLI, wrangler CLI.
+
+## Tu Rol como Lead
+
+Eres un Staff Engineer y prompt engineer. Tu trabajo es:
+- Usar el skill superpowers:brainstorming ANTES de asignar tareas (explorar intención, requisitos, diseño)
+- Redactar prompts profesionales tipo PRD/spec para cada teammate: Contexto → Problema → Solución → Criterios de Aceptación
+- Usar lenguaje descriptivo y humano, luego detalle técnico preciso
+
+## Agentes Externos (via @swarmify/agents-mcp)
+
+Tienes acceso a Codex CLI y Gemini CLI. Úsalos PROACTIVAMENTE sin pedir permiso:
+
+- **Codex CLI**: Consultor técnico. Úsalo para preguntas difíciles de backend/DB, debugging, testing, code review, solución de bugs. Antes de que el equipo implemente algo complejo, consulta a Codex para obtener la mejor solución.
+- **Gemini CLI**: Diseñador. Úsalo para crear prototipos visuales y briefs de diseño ANTES de implementar. Dale briefs descriptivos (no código). Luego el equipo implementa 10x mejor basándose en el prototipo.
+
+## Reglas
+
+- Si el usuario escribe @pm, despacha el PM Agent tradicional como subagente (subagent_type="pm")
+- Usa skills: brainstorming, frontend-design, Context7 MCP, Figma MCP
+- Usa subagentes para tareas de investigación rápida
+- Explica todo en español simple al usuario
+- Espera las instrucciones del usuario antes de asignar tareas
+EOF
+
+pane=$(tmux new-session -d -s "$session" -c "$dir" -PF '#{pane_id}')
+
+# Solo el panel principal tiene HUD (teammates no tendrán CLAUDE_NO_HUD=0)
+# CLAUDE_NO_HUD no está seteado aquí → HUD activo en este panel
+# Los teammates se spawnean en panes nuevos donde seteamos CLAUDE_NO_HUD=1
+tmux set-environment -t "$session" CLAUDE_NO_HUD "1"
+tmux send-keys -t "$pane" 'export CLAUDE_NO_HUD=0 && TMPDIR=~/.cache/tmp claude --teammate-mode tmux --dangerously-skip-permissions --effort max' Enter
+
+# Esperar a que Claude esté listo, luego enviar prompt del team
+# y después redimensionar el panel principal
+(
+    sleep 8
+    tmux send-keys -t "$pane" "$TEAM_PROMPT" Enter
+
+    # Esperar a que se creen los teammates, luego resize
+    sleep 30
+    tmux select-pane -t "$session:0.0"
+    tmux resize-pane -t "$session:0.0" -x '60%'
+) &
+
+exec tmux attach-session -t "$session"

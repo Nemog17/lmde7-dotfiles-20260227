@@ -19,38 +19,6 @@ NUNCA reescribas el archivo completo. Antes de cada cambio, usa este formato:
 💡 Por qué: [razón del cambio]
 ```
 
-## Agentes
-
-### PM Agent (`pm`) — Orquestador
-⚠️ **OBLIGATORIO PARA TODA TAREA SIN EXCEPCIÓN** ⚠️
-SIEMPRE despachar el agente `pm` (subagent_type="pm") como PRIMER paso ante CUALQUIER solicitud del usuario. No importa si la tarea parece simple, si es un solo archivo, o si solo toca un dominio. PM SIEMPRE toma el mando.
-
-El PM NO escribe código — planifica, delega al equipo (frontend, backend, dba, devops), revisa y reporta. Agentes externos (Codex, Gemini) solo bajo autorización explícita del usuario.
-
-**Única excepción:** Tareas de configuración de Claude Code (hooks, settings, memoria) se pueden manejar directamente.
-
-El agente está definido en `.claude/agents/pm.md` (proyecto) y `~/.claude/agents/pm.md` (global).
-
-### Frontend (`frontend`)
-OBLIGATORIO: Para CUALQUIER tarea relacionada con el frontend (componentes, vistas, estilos, responsive design, animaciones, UX, o cualquier archivo en `frontend/`), SIEMPRE despachar el agente `frontend` como subagent. No trabajar directamente en código frontend sin usar este agente.
-
-El agente está definido en `.claude/agents/frontend.md` y tiene conocimiento especializado de Vue.js, Tailwind CSS, mobile-first design, y todas las herramientas del proyecto (skills, MCP servers, Context7).
-
-### Backend (`backend`)
-OBLIGATORIO: Para CUALQUIER tarea relacionada con el backend (modelos, migraciones, Actions, GraphQL, APIs, testing, queue jobs, policies, seeders, o cualquier archivo en `backend/`), SIEMPRE despachar el agente `backend` como subagent. No trabajar directamente en código backend sin usar este agente.
-
-El agente está definido en `.claude/agents/backend.md` y tiene conocimiento especializado de Laravel 12, PostgreSQL (Neon), GraphQL (Lighthouse), Sanctum, Spatie, y todas las herramientas del proyecto (Neon MCP, Laravel Boost MCP, Context7).
-
-### DevOps (`devops`)
-OBLIGATORIO: Para CUALQUIER tarea de infraestructura, CI/CD, deploys, Cloudflare (Workers, Containers, Pages, R2), Neon (branches, DB), GitHub Actions, Docker, scripts de automatización, o archivos en `worker/`, `docker/`, `scripts/`, `.github/`, SIEMPRE despachar el agente `devops` como subagent.
-
-El agente está definido en `.claude/agents/devops.md` y tiene conocimiento especializado de Cloudflare (Workers, Containers, Pages, R2, Wrangler), Neon PostgreSQL, GitHub Actions, Docker, y todas las herramientas CLI (gh, wrangler, neonctl, git).
-
-### DBA (`dba`)
-OBLIGATORIO: Para CUALQUIER tarea de base de datos — migraciones, queries, performance, indexes, schema design, multi-tenancy, Neon branches, seeders, factories, o diagnóstico de DB — SIEMPRE despachar el agente `dba` como subagent.
-
-El agente está definido en `.claude/agents/dba.md` y tiene conocimiento especializado de PostgreSQL, multi-tenancy (BelongsToTenant), constraints complejos (EXCLUDE, CHECK, partial UNIQUE), indexes (composite, trgm, partial), Neon MCP, y referencia a `infra-secrets.md` para credenciales y config de conexión.
-
 ## Reglas
 
 ### Filosofía de Cambios
@@ -188,3 +156,40 @@ OBLIGATORIO: Monitorear en background después de cada `git push` y cada `wrangl
 3. `npx wrangler deploy --env dev` → monitorear deploy
 
 **IMPORTANTE**: Nunca eliminar los containers de producción (`triprd-api-triprdapi`, `triprd-api-triprdjobs`).
+
+## Agentes Externos (@swarmify/agents-mcp)
+
+El MCP `@swarmify/agents-mcp` provee herramientas para orquestar agentes externos: **Spawn**, **Status**, **Stop**, **Tasks**.
+
+### Codex CLI — Consultor Técnico
+- Preguntas difíciles de backend/DB, debugging, testing, code review, solución de bugs
+- Usar PROACTIVAMENTE: antes de implementar algo complejo, consultar a Codex para la mejor solución
+- No necesita aprobación del usuario — el lead decide cuándo usarlo
+
+### Gemini CLI — Diseñador
+- Prototipos de UI, briefs de diseño, exploración visual
+- Diseña primero con Gemini → luego el equipo Claude implementa 10x mejor
+- Darle briefs descriptivos en lenguaje humano (no código)
+- No necesita aprobación del usuario — el lead decide cuándo usarlo
+
+## Comunicación PRD/Spec
+
+Cuando delegues trabajo (a teammates, subagentes, o agentes externos), usa formato profesional:
+
+```
+CONTEXTO: [qué existe hoy y por qué importa]
+PROBLEMA: [qué falta o qué está mal]
+SOLUCIÓN: [qué hacer y cómo]
+CRITERIOS DE ACEPTACIÓN: [cómo verificar que está bien]
+```
+
+- Primero lenguaje humano descriptivo (que cualquier persona entienda)
+- Luego detalle técnico preciso (funciones, archivos, signatures)
+- Sé un prompt engineer: redacta prompts que saquen el máximo de cada herramienta
+
+## Skills y Herramientas
+
+- **superpowers:brainstorming**: OBLIGATORIO antes de cualquier trabajo creativo (features, componentes, cambios de comportamiento)
+- **frontend-design**: Para UI con diseño de alta calidad, no genérico
+- **Context7 MCP**: Para documentación actualizada de cualquier librería
+- **Figma MCP**: Si hay diseños disponibles en Figma

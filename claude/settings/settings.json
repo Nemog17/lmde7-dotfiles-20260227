@@ -38,11 +38,11 @@
       "Bash(npx tsc:*)",
       "Bash(head -20 grep -n \"balance_amount\\\\|payment_method\" /home/nehemuel/rentacar-modern/frontend/src/views/bookings/components/SidebarOverviewTab.vue)"
     ],
-    "defaultMode": "plan"
+    "defaultMode": "bypassPermissions"
   },
   "statusLine": {
     "type": "command",
-    "command": "bash -c 'plugin_dir=$(ls -d \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}\"/plugins/cache/claude-hud/claude-hud/*/ 2>/dev/null | awk -F/ '\"'\"'{ print $(NF-1) \"\\t\" $0 }'\"'\"' | sort -t. -k1,1n -k2,2n -k3,3n -k4,4n | tail -1 | cut -f2-); exec \"/usr/local/bin/node\" \"${plugin_dir}dist/index.js\"'"
+    "command": "bash -c 'if [ \"$CLAUDE_NO_HUD\" = \"1\" ]; then exit 0; fi; plugin_dir=$(ls -d \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}\"/plugins/cache/claude-hud/claude-hud/*/ 2>/dev/null | awk -F/ '\"'\"'{ print $(NF-1) \"\\t\" $0 }'\"'\"' | sort -t. -k1,1n -k2,2n -k3,3n -k4,4n | tail -1 | cut -f2-); exec \"/usr/local/bin/node\" \"${plugin_dir}dist/index.js\"'"
   },
   "enabledPlugins": {
     "frontend-design@claude-plugins-official": true,
@@ -70,19 +70,5 @@
   },
   "language": "Español",
   "autoMemoryEnabled": true,
-  "skipDangerousModePermissionPrompt": true,
-  "agent": "pm",
-  "hooks": {
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"⚠️ REGLA OBLIGATORIA ⚠️\\n1. Despacha el agente PM (subagent_type=pm) ANTES de hacer cualquier otra cosa\\n2. NUNCA trabajes directamente en código - PM decide qué agentes necesita\\n3. Usa AskUserQuestion antes de cualquier cambio\\n4. PM NUNCA lee archivos de código (vue, ts, php, sql, css). SIEMPRE delega a agentes especializados en BACKGROUND y espera sus reportes antes de reportar al usuario.\\nEsta regla aplica para TODAS las tareas sin excepción. Si la tarea es sobre configuración de Claude Code (hooks, settings, memoria), esa es la ÚNICA excepción.\"}}'",
-            "timeout": 5
-          }
-        ]
-      }
-    ]
-  }
+  "skipDangerousModePermissionPrompt": true
 }
