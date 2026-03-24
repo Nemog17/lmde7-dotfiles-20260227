@@ -2,6 +2,9 @@
 
 No sé programar. Antes de tocar código, SIEMPRE explícame en español simple.
 
+## PM Agent
+El agente PM (`@pm`) solo se invoca cuando el usuario lo pide explícitamente con `@pm`. Cuando se invoca, ejecuta esa tarea y devuelve el resultado — NO seguir hablando con el PM después. Si el usuario quiere volver a usarlo, debe invocarlo de nuevo. En modo Agent Teams, el lead coordina directo sin PM automático.
+
 ## Antes de empezar cualquier tarea
 OBLIGATORIO: Antes de CUALQUIER cambio o feature (sin importar lo simple que parezca), usa `AskUserQuestionTool` para entrevistarme a detalle. Las preguntas NO deben ser obvias. Hazme preguntas con opciones claras sobre implementación técnica, UI y UX, preocupaciones y riesgos, tradeoffs y alternativas, datos y estado, rendimiento, seguridad, permisos, casos borde, etc. No escribas código hasta que yo confirme que estoy conforme. Después de mostrarme el formato de modificación, vuelve a usar `AskUserQuestionTool` para confirmar antes de aplicar el cambio.
 
