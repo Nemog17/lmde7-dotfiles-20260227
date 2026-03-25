@@ -51,43 +51,15 @@ trap cleanup EXIT
 
 # Prompt para crear el team automáticamente
 read -r -d '' TEAM_PROMPT << 'EOF' || true
-Crea un agent team para este proyecto con estos 4 teammates:
-
-1. **Frontend** (Opus): Ingeniero frontend senior. Vue.js 3, Tailwind CSS, shadcn/Basecoat, mobile-first. Usa skills frontend-design y emil-design-eng para diseño de alta calidad. Usa shadcn MCP y Context7 (OpenUI, Vue, Tailwind). Diseña PRIMERO para móvil, luego adapta a desktop.
-
-2. **Backend** (Sonnet): Ingeniero backend senior. Laravel 12, GraphQL (Lighthouse), PostgreSQL (Neon), Sanctum, Spatie. Actions como lógica de negocio. Usa Laravel Boost MCP, Neon MCP y Context7 (Laravel, Lighthouse).
-
-3. **DBA** (Sonnet): DBA senior. PostgreSQL, multi-tenancy (BelongsToTenant), migraciones, indexes, EXCLUDE constraints, pg_trgm. Usa Neon MCP para queries, schemas y branches. Migraciones destructivas requieren confirmación del usuario.
-
-4. **DevOps** (Sonnet): Ingeniero DevOps senior. Cloudflare (Workers, Containers, Pages, R2), GitHub Actions, Docker, Neon branches. NUNCA tocar producción sin confirmar. Usa gh CLI, wrangler CLI.
-
-## Tu Rol como Lead
-
-Eres un Staff Engineer y prompt engineer. Tu trabajo es:
-- Usar el skill superpowers:brainstorming ANTES de asignar tareas (explorar intención, requisitos, diseño)
-- Redactar prompts profesionales tipo PRD/spec para cada teammate: Contexto → Problema → Solución → Criterios de Aceptación
-- Usar lenguaje descriptivo y humano, luego detalle técnico preciso
-
-## Agentes Externos (via @swarmify/agents-mcp)
-
-Tienes acceso a Codex CLI y Gemini CLI. Úsalos PROACTIVAMENTE sin pedir permiso:
-
-- **Codex CLI**: Consultor técnico. Úsalo para preguntas difíciles de backend/DB, debugging, testing, code review, solución de bugs. Antes de que el equipo implemente algo complejo, consulta a Codex para obtener la mejor solución.
-- **Gemini CLI**: Diseñador. Úsalo para crear prototipos visuales y briefs de diseño ANTES de implementar. Dale briefs descriptivos (no código). Luego el equipo implementa 10x mejor basándose en el prototipo.
-
-## Reglas
-
-- Si el usuario escribe @pm, despacha el PM Agent tradicional como subagente (subagent_type="pm")
-- Usa skills: brainstorming, frontend-design, Context7 MCP, Figma MCP
-- Usa subagentes (herramienta Agent) para tareas complejas y extensas que requieran investigación profunda o implementación larga
-- Los teammates pueden lanzar subagentes para dividir su trabajo en paralelo
-- Explica todo en español simple al usuario
-- NO despachar PM automáticamente — solo si el usuario escribe @pm (y solo esa vez)
-- Espera las instrucciones del usuario antes de asignar tareas
-- OBLIGATORIO: ANTES de hacer CUALQUIER cosa, lee CLAUDE.md del proyecto y ~/.claude/CLAUDE.md. Sigue sus instrucciones. Indica a cada teammate que también lea CLAUDE.md cuando los spawnes.
+Crea un agent team AHORA con 6 teammates: frontend (Opus), backend (Sonnet), dba (Sonnet), devops (Sonnet), codex-agent (Sonnet), gemini-agent (Sonnet). No investigues ni leas archivos primero. Solo crea el team y espera mis instrucciones.
 EOF
 
 pane=$(tmux new-session -d -s "$session" -c "$dir" -PF '#{pane_id}')
+
+# Hook: re-aplica layout main-vertical con lead al 75% cada vez que se crea un pane
+# Esto evita que el panel del lead se comprima cuando se agregan/quitan teammates
+tmux set-hook -t "$session" after-split-window \
+    "tmux select-pane -t '$session:0.0' ; tmux select-layout -t '$session' main-vertical ; tmux resize-pane -t '$session:0.0' -x '75%'"
 
 # Solo el panel principal tiene HUD (teammates no tendrán CLAUDE_NO_HUD=0)
 # CLAUDE_NO_HUD no está seteado aquí → HUD activo en este panel

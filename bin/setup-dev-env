@@ -502,6 +502,54 @@ setup_path() {
 setup_path
 
 # ============================================================================
+# Paso 9/9: Agent Bridge (MCP server para multi-agentes)
+# ============================================================================
+echo ""
+info "${BOLD}Paso 9/9: Agent Bridge (MCP)${NC}"
+
+install_agent_bridge() {
+    local bridge_dir="$HOME/.local/share/agent-bridge"
+
+    # Clonar repo dedicado o actualizar si ya existe
+    if [[ -d "$bridge_dir/.git" ]]; then
+        info "Actualizando agent-bridge..."
+        git -C "$bridge_dir" pull --ff-only -q 2>/dev/null || true
+    else
+        info "Clonando Nemog17/agent-bridge..."
+        git clone -q https://github.com/Nemog17/agent-bridge.git "$bridge_dir" 2>/dev/null || {
+            fail "No se pudo clonar Nemog17/agent-bridge"
+            RESULTS[agent_bridge]="fallo"
+            return 1
+        }
+    fi
+
+    # Instalar dependencias (dist/ ya viene en el repo — no necesita build)
+    cd "$bridge_dir"
+    npm install -q 2>/dev/null || {
+        fail "Error instalando dependencias de agent-bridge"
+        RESULTS[agent_bridge]="fallo"
+        return 1
+    }
+
+    # Instalar script wrapper en PATH
+    cat > "$HOME/.local/bin/agent-bridge" <<'WRAPPER'
+#!/usr/bin/env bash
+exec node "$HOME/.local/share/agent-bridge/dist/index.js"
+WRAPPER
+    chmod +x "$HOME/.local/bin/agent-bridge"
+
+    if [[ -f "$bridge_dir/dist/index.js" ]]; then
+        ok "Agent Bridge instalado correctamente"
+        RESULTS[agent_bridge]="ok"
+    else
+        fail "dist/index.js no encontrado"
+        RESULTS[agent_bridge]="fallo"
+    fi
+}
+
+install_agent_bridge
+
+# ============================================================================
 # Resumen final
 # ============================================================================
 echo ""
@@ -509,7 +557,7 @@ echo -e "${BOLD}========================================${NC}"
 echo -e "${BOLD}  Resumen de instalacion${NC}"
 echo -e "${BOLD}========================================${NC}"
 
-tools_order=(dependencias kitty claude claude_hud yazi lazygit lazydocker path)
+tools_order=(dependencias kitty claude claude_hud yazi lazygit lazydocker path agent_bridge)
 tool_labels=(
     "Dependencias (tmux, git, curl)"
     "Kitty terminal"
@@ -519,6 +567,7 @@ tool_labels=(
     "Lazygit (Git TUI)"
     "Lazydocker (Docker TUI)"
     "PATH config"
+    "Agent Bridge (MCP)"
 )
 
 all_ok=true
