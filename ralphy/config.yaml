@@ -1,0 +1,14 @@
+# Ralphy CLI — Template de configuración
+# Copia este archivo a .ralphy/config.yaml en tu proyecto y ajusta los valores
+
+# project:
+#   name: mi-proyecto
+#   type: laravel   # laravel, nextjs, nuxt, etc.
+
+# agents:
+#   default_model: claude-sonnet-4-6
+#   timeout: 300
+
+# integrations:
+#   github: true
+#   linear: false

@@ -22,6 +22,14 @@ NUNCA reescribas el archivo completo. Antes de cada cambio, usa este formato:
 💡 Por qué: [razón del cambio]
 ```
 
+## Estrategia de Cambios: DIFF siempre, WHOLE nunca
+
+- **WHOLE** (archivo completo): Reescribe todo. Gasta tokens, arriesga perder código, PRs ilegibles.
+- **DIFF** (diferencia): Solo el cambio exacto. Mínimo tokens, cambios precisos, PRs limpios.
+
+**REGLA**: SIEMPRE usar DIFF (`Edit` tool). NUNCA `Write` tool para archivos existentes. Múltiples secciones → múltiples `Edit` calls.
+**Excepciones**: Archivos nuevos, prototipos temporales.
+
 ## Reglas
 
 ### Filosofía de Cambios

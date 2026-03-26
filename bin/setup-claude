@@ -166,6 +166,59 @@ else
 fi
 
 echo ""
+echo -e "${BOLD}  Skills adicionales${NC}"
+
+# Skill: antigravity-awesome-skills
+echo "  [ ] 11) antigravity-awesome-skills — coleccion de skills para Claude, Codex y Gemini"
+# Skill: planetscale/database-skills
+echo "  [ ] 12) planetscale/database-skills — skills de base de datos para Claude, Codex y Gemini"
+# Skill: skill-creator (Anthropic)
+echo "  [ ] 13) skill-creator (Anthropic) — crear y publicar skills propios"
+# Skill: frontend-comms (local)
+if has_skill "frontend-comms"; then
+    echo -e "  ${DIM}[=] 14) frontend-comms — ya instalado${NC}"
+    SKILL_FRONTCOMMS="installed"
+else
+    echo "  [ ] 14) frontend-comms — comunicacion entre componentes frontend (skill local)"
+    SKILL_FRONTCOMMS="available"
+fi
+# Skill: prompt-engineer (local)
+if has_skill "prompt-engineer"; then
+    echo -e "  ${DIM}[=] 15) prompt-engineer — ya instalado${NC}"
+    SKILL_PROMPTENG="installed"
+else
+    echo "  [ ] 15) prompt-engineer — ingenieria de prompts avanzada (skill local)"
+    SKILL_PROMPTENG="available"
+fi
+
+echo ""
+echo -e "${BOLD}  CLIs adicionales${NC}"
+
+# ralphy-cli
+if has_command "ralphy"; then
+    echo -e "  ${DIM}[=] 16) ralphy-cli — ya instalado${NC}"
+    CLI_RALPHY="installed"
+else
+    echo "  [ ] 16) ralphy-cli — CLI para gestion de proyectos con IA"
+    CLI_RALPHY="available"
+fi
+
+# @googleworkspace/cli
+if has_command "gwcli" || npm list -g "@googleworkspace/cli" &>/dev/null 2>&1; then
+    echo -e "  ${DIM}[=] 17) Google Workspace CLI — ya instalado${NC}"
+    CLI_GW="installed"
+else
+    echo "  [ ] 17) Google Workspace CLI — gestionar Drive, Docs, Sheets desde terminal"
+    CLI_GW="available"
+fi
+
+echo ""
+echo -e "${BOLD}  Configuracion de Codex CLI + Gemini CLI${NC}"
+echo "  [ ] 18) Codex CLI MCPs — sequential-thinking, figma, swarm"
+echo "  [ ] 19) Gemini CLI MCPs — magic, figma, tailwindcss, a11y (requiere tokens)"
+echo "  [ ] 20) Ralphy config template — crear .ralphy/config.yaml en el proyecto"
+
+echo ""
 echo -e "  ${BOLD}Opciones rapidas:${NC}"
 echo "  a) Todo lo que falta"
 echo "  s) Solo skills"
@@ -182,10 +235,10 @@ fi
 
 # Expandir opciones rapidas
 case "$choices" in
-    a) choices="1 2 3 4 5 6 7 8 9 10" ;;
-    s) choices="1 2" ;;
+    a) choices="1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20" ;;
+    s) choices="1 2 11 12 13 14 15" ;;
     m) choices="3 4 5" ;;
-    c) choices="7 8 9" ;;
+    c) choices="7 8 9 16 17" ;;
 esac
 
 echo ""
@@ -351,6 +404,129 @@ MCPEOF
 
                 log "Claude HUD v$version instalado"
                 info "El statusLine ya esta configurado en settings.json"
+            fi
+            ;;
+        11)
+            info "Instalando antigravity-awesome-skills..."
+            npx antigravity-awesome-skills --claude --codex --gemini 2>&1 | tail -5
+            log "antigravity-awesome-skills instalado"
+            ;;
+        12)
+            info "Instalando planetscale/database-skills..."
+            npx skills add planetscale/database-skills --claude --codex --gemini -y 2>&1 | tail -5
+            log "planetscale/database-skills instalado"
+            ;;
+        13)
+            info "Instalando skill-creator (Anthropic)..."
+            SKILLS_DIR="$HOME/.claude/skills"
+            ANTHROPIC_SKILLS_TMP="$(mktemp -d)"
+            ANTHROPIC_SKILLS_DEST="$SKILLS_DIR/skill-creator"
+            if [[ -d "$ANTHROPIC_SKILLS_DEST" ]]; then
+                skip "skill-creator ya existe en $ANTHROPIC_SKILLS_DEST"
+            else
+                git clone --depth 1 -q https://github.com/anthropics/skills.git "$ANTHROPIC_SKILLS_TMP" 2>&1 || {
+                    warn "No se pudo clonar anthropics/skills"
+                    rm -rf "$ANTHROPIC_SKILLS_TMP"
+                }
+                if [[ -d "$ANTHROPIC_SKILLS_TMP/skill-creator" ]]; then
+                    mkdir -p "$SKILLS_DIR"
+                    cp -r "$ANTHROPIC_SKILLS_TMP/skill-creator" "$ANTHROPIC_SKILLS_DEST"
+                    log "skill-creator instalado en $ANTHROPIC_SKILLS_DEST"
+                else
+                    warn "No se encontro skill-creator en el repo anthropics/skills"
+                fi
+                rm -rf "$ANTHROPIC_SKILLS_TMP"
+            fi
+            ;;
+        14)
+            if [[ "$SKILL_FRONTCOMMS" == "installed" ]]; then
+                skip "frontend-comms"
+            else
+                info "Instalando skill frontend-comms (local)..."
+                DOTFILES_SKILLS="$(cd "$(dirname "$0")/.." && pwd)/claude/skills"
+                if [[ -d "$DOTFILES_SKILLS/frontend-comms" ]]; then
+                    mkdir -p .claude/skills
+                    cp -r "$DOTFILES_SKILLS/frontend-comms" .claude/skills/
+                    log "frontend-comms instalado en .claude/skills/"
+                else
+                    warn "No se encontro $DOTFILES_SKILLS/frontend-comms"
+                fi
+            fi
+            ;;
+        15)
+            if [[ "$SKILL_PROMPTENG" == "installed" ]]; then
+                skip "prompt-engineer"
+            else
+                info "Instalando skill prompt-engineer (local)..."
+                DOTFILES_SKILLS="$(cd "$(dirname "$0")/.." && pwd)/claude/skills"
+                if [[ -d "$DOTFILES_SKILLS/prompt-engineer" ]]; then
+                    mkdir -p .claude/skills
+                    cp -r "$DOTFILES_SKILLS/prompt-engineer" .claude/skills/
+                    log "prompt-engineer instalado en .claude/skills/"
+                else
+                    warn "No se encontro $DOTFILES_SKILLS/prompt-engineer"
+                fi
+            fi
+            ;;
+        16)
+            if [[ "$CLI_RALPHY" == "installed" ]]; then
+                skip "ralphy-cli"
+            else
+                info "Instalando ralphy-cli..."
+                npm install -g ralphy-cli 2>&1 | tail -3
+                log "ralphy-cli instalado"
+            fi
+            ;;
+        17)
+            if [[ "$CLI_GW" == "installed" ]]; then
+                skip "Google Workspace CLI"
+            else
+                info "Instalando Google Workspace CLI..."
+                npm install -g @googleworkspace/cli 2>&1 | tail -3
+                log "Google Workspace CLI instalado"
+            fi
+            ;;
+        18)
+            info "Configurando Codex CLI MCPs en ~/.codex/config.toml..."
+            CODEX_CONFIG="$HOME/.codex/config.toml"
+            DOTFILES_CODEX="$(cd "$(dirname "$0")/.." && pwd)/codex/config.toml"
+            if [[ -f "$CODEX_CONFIG" ]]; then
+                warn "~/.codex/config.toml ya existe. Revisa manualmente:"
+                warn "  cat $DOTFILES_CODEX"
+                info "Abre $CODEX_CONFIG y agrega los [mcp_servers] que falten"
+            else
+                mkdir -p "$HOME/.codex"
+                cp "$DOTFILES_CODEX" "$CODEX_CONFIG"
+                log "~/.codex/config.toml creado con MCPs: figma, swarm, sequential-thinking"
+            fi
+            ;;
+        19)
+            info "Configurando Gemini CLI MCPs en ~/.gemini/settings.json..."
+            GEMINI_CONFIG="$HOME/.gemini/settings.json"
+            DOTFILES_GEMINI="$(cd "$(dirname "$0")/.." && pwd)/gemini/settings.json"
+            if [[ -f "$GEMINI_CONFIG" ]]; then
+                warn "~/.gemini/settings.json ya existe. Revisa manualmente:"
+                warn "  cat $DOTFILES_GEMINI"
+                info "Reemplaza API_KEY_AQUI y TOKEN_AQUI con tus tokens reales"
+            else
+                mkdir -p "$HOME/.gemini"
+                cp "$DOTFILES_GEMINI" "$GEMINI_CONFIG"
+                warn "~/.gemini/settings.json creado con PLACEHOLDERS."
+                warn "Edita el archivo y reemplaza:"
+                warn "  API_KEY_AQUI → tu API key de 21st.dev (magic MCP)"
+                warn "  TOKEN_AQUI  → tu Figma Personal Access Token"
+                log "~/.gemini/settings.json configurado"
+            fi
+            ;;
+        20)
+            info "Creando template .ralphy/config.yaml en el proyecto..."
+            DOTFILES_RALPHY="$(cd "$(dirname "$0")/.." && pwd)/ralphy/config.yaml"
+            if [[ -f ".ralphy/config.yaml" ]]; then
+                skip ".ralphy/config.yaml ya existe"
+            else
+                mkdir -p .ralphy
+                cp "$DOTFILES_RALPHY" .ralphy/config.yaml
+                log ".ralphy/config.yaml creado — edita los valores para tu proyecto"
             fi
             ;;
         *)

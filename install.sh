@@ -68,6 +68,49 @@ if [[ -f "$DOTFILES_DIR/claude/settings/settings.json" ]]; then
     echo -e "  ${GREEN}[+]${NC}  settings.json (HUD, plugins, permisos)"
 fi
 
+# Copiar skills locales a ~/.claude/skills/
+if [[ -d "$DOTFILES_DIR/claude/skills" ]]; then
+    mkdir -p "$HOME/.claude/skills"
+    for skill_dir in "$DOTFILES_DIR/claude/skills"/*/; do
+        name="$(basename "$skill_dir")"
+        cp -r "$skill_dir" "$HOME/.claude/skills/$name"
+        echo -e "  ${GREEN}[+]${NC}  Skill: $name"
+    done
+fi
+
+# --- Codex CLI config ---
+echo ""
+echo -e "${BLUE}[*]${NC} Configurando Codex CLI..."
+
+if [[ -f "$DOTFILES_DIR/codex/config.toml" ]]; then
+    if [[ -f "$HOME/.codex/config.toml" ]]; then
+        echo -e "  ${YELLOW}[!]${NC}  ~/.codex/config.toml ya existe — no sobreescribiendo"
+        echo -e "  ${BLUE}[i]${NC}  Revisa: $DOTFILES_DIR/codex/config.toml para los MCPs"
+    else
+        mkdir -p "$HOME/.codex"
+        cp "$DOTFILES_DIR/codex/config.toml" "$HOME/.codex/config.toml"
+        echo -e "  ${GREEN}[+]${NC}  ~/.codex/config.toml (MCPs: figma, swarm, sequential-thinking)"
+    fi
+fi
+
+# --- Gemini CLI config ---
+echo ""
+echo -e "${BLUE}[*]${NC} Configurando Gemini CLI..."
+
+if [[ -f "$DOTFILES_DIR/gemini/settings.json" ]]; then
+    if [[ -f "$HOME/.gemini/settings.json" ]]; then
+        echo -e "  ${YELLOW}[!]${NC}  ~/.gemini/settings.json ya existe — no sobreescribiendo"
+        echo -e "  ${BLUE}[i]${NC}  Revisa: $DOTFILES_DIR/gemini/settings.json para los MCPs"
+    else
+        mkdir -p "$HOME/.gemini"
+        cp "$DOTFILES_DIR/gemini/settings.json" "$HOME/.gemini/settings.json"
+        echo -e "  ${GREEN}[+]${NC}  ~/.gemini/settings.json creado con placeholders"
+        echo -e "  ${YELLOW}[!]${NC}  IMPORTANTE: Edita ~/.gemini/settings.json y reemplaza:"
+        echo -e "             API_KEY_AQUI → tu API key de 21st.dev"
+        echo -e "             TOKEN_AQUI   → tu Figma Personal Access Token"
+    fi
+fi
+
 # --- PATH setup ---
 line='export PATH="$HOME/.local/bin:$PATH"'
 if ! grep -qF '.local/bin' "$HOME/.bashrc" 2>/dev/null; then
