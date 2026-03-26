@@ -51,7 +51,7 @@ trap cleanup EXIT
 
 # Prompt para crear el team automáticamente
 read -r -d '' TEAM_PROMPT << 'EOF' || true
-Crea un agent team AHORA con 6 teammates: frontend (Opus), backend (Sonnet), dba (Sonnet), devops (Sonnet), codex-agent (Sonnet), gemini-agent (Sonnet). No investigues ni leas archivos primero. Solo crea el team y espera mis instrucciones.
+Crea un agent team AHORA con 5 teammates: prompt-engineer (Opus), dba (Opus), devops (Sonnet), codex-agent (Sonnet), gemini-agent (Sonnet). No investigues ni leas archivos primero. Solo crea el team y espera mis instrucciones.
 EOF
 
 pane=$(tmux new-session -d -s "$session" -c "$dir" -PF '#{pane_id}')

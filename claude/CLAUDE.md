@@ -9,7 +9,7 @@ No sé programar. Antes de tocar código, SIEMPRE explícame en español simple.
 | Teammate | Modelo | Rol |
 |---|---|---|
 | `prompt-engineer` | Opus | Crafting de prompts optimizados para el equipo |
-| `dba` | Sonnet | PostgreSQL, migrations, indexes, multi-tenancy, Neon |
+| `dba` | Opus | PostgreSQL, migrations, indexes, multi-tenancy, Neon |
 | `devops` | Sonnet | Cloudflare, Docker, CI/CD, GitHub Actions |
 | `codex-agent` | Sonnet | Consultor técnico via Codex CLI (agents-mcp) |
 | `gemini-agent` | Sonnet | Diseñador via Gemini CLI (agents-mcp) |
