@@ -69,93 +69,177 @@ ralphy/
 └── config.yaml     # Template de config para proyectos Ralphy
 ```
 
-## Arquitectura de agentes
+## Arquitectura de agentes — Dev-Team Lean (5+3)
 
 ```
-                USUARIO
-                  |
-          🎯 PM AGENT (default)
-             /    |    \     \
-    🎨 Frontend ⚙️ Backend 🗄️ DBA 🚀 DevOps    Equipo interno (Sonnet)
-       - - - - - - - - - - - - - - - -
-       Codex            Gemini                   Externos (solo si autorizas)
-       (refactors)      (prototipos)
+                    USUARIO
+                      |
+             Lead (Opus 4.6 1M)
+           Staff Engineer + coord.
+        /      |      |      |      \
+  prompt-   codex   gemini  dba   devops
+   eng     (Codex  (Gemini (Opus) (Sonnet)
+  (Opus)    CLI)    CLI)
+
+  On-demand (Agent tool, sin team_name):
+  @fullstack (Opus)  @frontend (Opus)  @backend (Sonnet)  @pm (solo con @pm)
+
+  CLI autonomo: ralphy (loop largo, tareas desatendidas)
 ```
 
-### 🎯 PM Agent — El orquestador (OBLIGATORIO)
+### Persistentes (siempre activos en dev-team)
 
-PM es el agente principal de TODA sesion. Se configura automaticamente via `"agent": "pm"` en settings.json + un hook `UserPromptSubmit` que refuerza la regla en cada prompt.
+| Agente | Modelo | Rol | Herramientas |
+|--------|--------|-----|-------------|
+| **prompt-engineer** | Opus | Redactar PRDs, refinar specs, mejorar prompts | superpowers:brainstorming |
+| **dba** | Opus | PostgreSQL, multi-tenancy, migraciones, indexes | Neon MCP |
+| **devops** | Sonnet | Cloudflare, CI/CD, Docker, GitHub Actions | gh, wrangler, neonctl |
+| **codex-agent** | Sonnet | Consultor técnico via Codex CLI — debugging, code review | agents-mcp |
+| **gemini-agent** | Sonnet | Diseñador via Gemini CLI — prototipos UI, briefs | agents-mcp |
 
-No escribe codigo. Planifica, delega, revisa y coordina. Se comunica con el usuario en espanol simple y con los agentes en tecnicismos precisos como un Staff Engineer.
+### On-demand (lanzar con Agent tool, descartar al terminar)
 
-**Paso cero**: Lee CLAUDE.md (proyecto + global) ANTES de cualquier otra cosa — nunca delega sin conocer las reglas.
+| Agente | Modelo | Cuándo usarlo |
+|--------|--------|--------------|
+| **fullstack** | Opus | Features end-to-end que cruzan backend + frontend |
+| **frontend** | Opus | Tareas exclusivamente de UI: componentes, estilos, animaciones |
+| **backend** | Sonnet | Tareas exclusivamente de backend: APIs, GraphQL, testing |
+| **pm** | Opus | Solo si el usuario escribe `@pm` explícitamente |
 
-**Identidad visual**: Siempre se identifica con banner `🎯 PM Agent` y reporta con citas del equipo (`> 🎨 Frontend Agent: ...`).
+### Regla DIFF vs WHOLE
 
-**Delegacion**: NUNCA lee archivos de codigo directamente. Delega toda investigacion al agente apropiado y sintetiza los reportes.
+El lead NUNCA pide reescribir archivos completos. Siempre delega con:
+- Archivo exacto + número de línea
+- Código actual vs código nuevo
+- Razón del cambio
 
-**Flujo**: Leer CLAUDE.md -> Analizar dominios -> Delegar investigacion -> Sintetizar reportes -> Planificar -> Ejecutar -> Revisar -> Reportar
+Los teammates usan el formato `📁📍🔍✏️💡` del CLAUDE.md.
 
-**Orden de dependencias**: 🗄️ DBA (schema) -> ⚙️ Backend (APIs) -> 🎨 Frontend (UI) -> 🚀 DevOps (deploy)
+### Orden de ejecución con dependencias
 
-### Agentes especializados
+```
+DBA (schema) → Backend (APIs) → Frontend (UI) → DevOps (deploy)
+                    ↕                  ↕
+              codex-agent         gemini-agent
+           (consulta técnica)    (diseño previo)
+```
 
-| Agente | Emoji | Modelo | Dominio | Herramientas |
-|--------|-------|--------|---------|-------------|
-| **PM** | 🎯 | Default | Coordinacion, arquitectura | Swarmify MCP |
-| **Frontend** | 🎨 | Sonnet | Vue.js 3, Tailwind, Basecoat, mobile-first | shadcn MCP, Vuetify MCP, Context7, skills (emil-design-eng, shadcn) |
-| **Backend** | ⚙️ | Sonnet | Laravel 12, GraphQL (Lighthouse), Actions, Sanctum, Spatie | Laravel Boost MCP, Context7 |
-| **DBA** | 🗄️ | Sonnet | PostgreSQL, multi-tenancy, migraciones, indexes, constraints | Neon MCP (branches, SQL, schemas) |
-| **DevOps** | 🚀 | Sonnet | Cloudflare (Workers/Containers/Pages/R2), GitHub Actions, Docker | gh, wrangler, neonctl CLIs |
+## MCP Servers por Plataforma
 
-### Agentes externos (bajo autorizacion)
+### Claude Code (`~/.claude.json`)
 
-| Agente | Para que |
-|--------|---------|
-| **Codex CLI** | Refactorizar codigo, implementar features, resolver bugs |
-| **Gemini CLI** | Prototipos de diseno, previsualizacion de UI en local |
+| MCP | Tipo | Funcion |
+|-----|------|---------|
+| **Neon** | HTTP | PostgreSQL serverless: branches, SQL, schemas, queries lentos |
+| **Context7** | HTTP | Documentacion actualizada de cualquier libreria |
+| **Swarm** | stdio | Orquestacion de agentes externos (Codex, Gemini) |
 
-## MCP Servers
+Template en `dotfiles/claude/claude.json.template` (tokens como placeholders).
+
+### Claude Code (proyecto `.mcp.json`)
 
 | MCP | Funcion |
 |-----|---------|
 | **shadcn** | Buscar e instalar componentes de shadcn/ui |
 | **Vuetify** | Referencia de componentes Vue |
-| **Neon** | PostgreSQL serverless: branches, SQL, schemas, queries lentos |
 | **Laravel Boost** | Inspeccion de modelos, rutas, schema Laravel |
-| **Context7** | Documentacion actualizada de cualquier libreria |
-| **Swarmify agents-mcp** | Orquestacion de agentes externos |
+| **agents-mcp** | Orquestacion de Codex CLI y Gemini CLI |
+
+### Codex CLI (`~/.codex/config.toml`)
+
+| MCP | Funcion |
+|-----|---------|
+| **figma** (url) | Acceso a disenos de Figma |
+| **swarm** | Orquestacion de agentes via agents-mcp |
+| **sequential-thinking** | Razonamiento estructurado en cadena |
+
+### Gemini CLI (`~/.gemini/settings.json` global)
+
+| MCP | Funcion |
+|-----|---------|
+| **magic** | Generar componentes UI desde texto (21st.dev) |
+| **figma** | Acceso a disenos de Figma via token personal |
+
+### Gemini CLI (proyecto `backend/.gemini/settings.json`)
+
+| MCP | Funcion |
+|-----|---------|
+| **laravel-boost** | Inspeccion de modelos y rutas Laravel |
+| **tailwindcss** | Referencia de clases Tailwind |
+| **a11y** | Auditoria de accesibilidad (axe-core) |
 
 ## Skills
 
+### Via npm (setup-claude los instala)
+
+| Skill | Fuente | Funcion |
+|-------|--------|---------|
+| **emil-design-eng** | emilkowalski/skill | Diseno UI, animaciones, micro-interacciones |
+| **shadcn** | shadcn/ui | Patrones shadcn/ui, theming OKLCH, componentes, CLI |
+| **antigravity-awesome-skills** | antigravity | Coleccion de 93 skills para Claude, Codex y Gemini |
+| **planetscale/database-skills** | PlanetScale | 4 skills de base de datos para Claude, Codex y Gemini |
+| **skill-creator** | anthropics/skills | Crear y publicar skills propios |
+
+### Locales (en `dotfiles/claude/skills/`)
+
 | Skill | Funcion |
 |-------|---------|
-| **emil-design-eng** | Filosofia de diseno UI, animaciones, micro-interacciones (Emil Kowalski) |
-| **shadcn** | Patrones shadcn/ui, theming OKLCH, componentes, CLI, registries |
+| **frontend-comms** | Comunicacion entre componentes frontend (eventos, props, stores) |
+| **prompt-engineer** | Ingenieria de prompts avanzada, redaccion de PRDs y specs |
 
 ## setup-claude — Menu interactivo
 
 Detecta que ya esta instalado y solo instala lo que falta. Funciona en cualquier proyecto.
 
 ```
-Skills:     1) emil-design-eng    2) shadcn
-MCPs:       3) shadcn MCP         4) Swarmify agents-mcp    5) Context7
-Agentes:    6) PM, Frontend, Backend, DBA, DevOps
-CLIs:       7) gh                 8) wrangler               9) neonctl
-HUD:        10) Claude HUD
+Skills:       1) emil-design-eng      2) shadcn
+MCPs:         3) shadcn MCP           4) Swarmify agents-mcp    5) Context7
+Agentes:      6) equipo dev-team
+CLIs:         7) gh    8) wrangler    9) neonctl
+HUD:          10) Claude HUD
 
-Rapido:     a) todo    s) skills    m) MCPs    c) CLIs    q) salir
+Skills extra: 11) antigravity-awesome-skills   12) planetscale/database-skills
+              13) skill-creator (Anthropic)     14) frontend-comms (local)
+              15) prompt-engineer (local)
+
+CLIs extra:   16) ralphy-cli    17) @googleworkspace/cli
+
+Configs:      18) Codex CLI MCPs    19) Gemini CLI MCPs    20) Ralphy template
+
+AI CLIs:      21) Claude Code    22) Codex CLI    23) Gemini CLI
+
+Tokens:       24) Configurar API keys interactivo (Magic, Figma, Neon, Context7)
+Claude MCPs:  25) Configurar ~/.claude.json (Neon, Context7, Swarm)
+
+Rapido:  a) todo   s) skills(1-15)   m) MCPs   c) CLIs(7-17)   ai) AI CLIs   q) salir
 ```
 
 Siempre sincroniza `settings.json` al final (HUD, plugins, permisos, idioma).
+
+### CLIs disponibles
+
+| CLI | Paquete | Funcion |
+|-----|---------|---------|
+| **gh** | system | GitHub: PRs, issues, workflows, secrets |
+| **wrangler** | wrangler | Cloudflare Workers, Pages, R2, Containers |
+| **neonctl** | neonctl | Neon branches, SQL, connection strings |
+| **ralphy-cli** | ralphy-cli | Gestion de proyectos con IA |
+| **@googleworkspace/cli** | @googleworkspace/cli | Drive, Docs, Sheets desde terminal |
+| **claude** | @anthropic-ai/claude-code | Claude Code CLI |
+| **codex** | @openai/codex | Codex CLI |
+| **gemini** | @google/gemini-cli | Gemini CLI |
 
 ## install.sh — Que hace
 
 1. Crea symlinks de `bin/` a `~/.local/bin/`
 2. Agrega `~/.local/bin` al PATH (`.bashrc` y `.zshrc`)
-3. Copia `CLAUDE.md` y agentes a `~/.claude/`
+3. Copia `CLAUDE.md`, agentes y skills locales a `~/.claude/`
 4. Copia `settings.json` a `~/.claude/` (con backup si ya existe)
-5. Menu: instalar entorno de desarrollo, VMs, o solo symlinks
+5. Copia `claude.json.template` a `~/.claude.json` (solo si no existe — no sobreescribe MCPs existentes)
+6. Copia `codex/config.toml` a `~/.codex/config.toml` (solo si no existe)
+7. Copia `gemini/settings.json` a `~/.gemini/settings.json` (solo si no existe, con placeholders)
+8. Muestra instrucciones para reemplazar tokens (Magic, Figma, Neon, Context7)
+9. Menu: instalar entorno de desarrollo, VMs, o solo symlinks
 
 ## Workspace tmux (`code`)
 
@@ -184,8 +268,8 @@ Claude Code se lanza con: `--permission-mode plan --effort max`
 
 Se sincroniza automaticamente. Incluye:
 
-- **Agent**: `pm` — PM arranca como agente principal en cada sesion
-- **Hook**: `UserPromptSubmit` — inyecta 4 reglas obligatorias en cada prompt: (1) usar PM, (2) no trabajar directo en código, (3) usar AskUserQuestion, (4) PM NUNCA lee código — siempre delega a agentes en background
+- **Agent**: lead del dev-team (Staff Engineer) — coordina sin PM por defecto. PM solo con `@pm`
+- **Hook**: `UserPromptSubmit` — inyecta reglas obligatorias: AskUserQuestion antes de cambios, no trabajar directo en código, usar DIFF no WHOLE
 - **HUD**: Statusline con info de sesion, tokens, modelo, git
 - **Plugins**: superpowers, frontend-design, feature-dev, context7, coderabbit, playwright, LSPs (TypeScript, PHP, Python), Figma, Notion, y mas
 - **Idioma**: Espanol
