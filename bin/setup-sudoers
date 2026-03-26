@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ============================================================================
+# setup-sudoers: Configura NOPASSWD para herramientas de desarrollo
+# Evita pedir contraseña en operaciones comunes de dev: apt, npm, docker, etc.
+# Uso: setup-sudoers
+# ============================================================================
+
+echo "Configurando NOPASSWD para dev tools..."
+
+echo "$USER ALL=(ALL) NOPASSWD: /usr/bin/apt-get, /usr/bin/apt, /usr/bin/npm, /usr/bin/docker, /usr/bin/systemctl, /usr/bin/snap, /usr/bin/dpkg" \
+    | sudo tee /etc/sudoers.d/dev-nopasswd > /dev/null
+
+sudo chmod 440 /etc/sudoers.d/dev-nopasswd
+
+sudo visudo -cf /etc/sudoers.d/dev-nopasswd && echo "OK: NOPASSWD configurado para dev tools"

@@ -1,0 +1,45 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(unset CLAUDECODE)",
+      "Bash(claude plugins list)"
+    ]
+  },
+  "outputStyle": "Explanatory",
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"Eres el lead del dev-team. Lee .claude/teams/dev-team.md para tu rol y guidelines. Tienes 6 teammates: frontend (Opus), backend (Sonnet), dba (Sonnet), devops (Sonnet), codex-agent (Sonnet, agents-mcp), gemini-agent (Sonnet, agents-mcp). Coordina directo — NO despachar PM automáticamente. Usa brainstorming antes de tareas creativas. Usa AskUserQuestion antes de cualquier cambio. PM solo si el usuario escribe @pm. Los teammates deben usar subagentes propios — NO lanzar agentes individuales desde el lead.\"}}'",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"OBLIGATORIO: Lee CLAUDE.md del proyecto y ~/.claude/CLAUDE.md ANTES de cualquier acción. Sigue sus instrucciones. Usa AskUserQuestion antes de cualquier cambio. Eres el lead del dev-team — coordina directo a los 6 teammates (frontend, backend, dba, devops, codex-agent, gemini-agent). PM solo se invoca cuando el usuario escribe @pm.\"}}'",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import sys,json; d=json.load(sys.stdin); exit(0 if '#exit' in d.get('prompt','') else 1)\" && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"SHUTDOWN INMEDIATO: El usuario escribio #exit. 1) Envia shutdown_request a TODOS los teammates activos del team via SendMessage. 2) Ejecuta tmux kill-session via Bash para cerrar todo. NO hagas nada mas, no preguntes, no expliques, solo cierra.\"}}' || true",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

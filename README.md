@@ -29,6 +29,7 @@ code                # Abre workspace tmux
 | `agents` | Ver y gestionar agentes (`agents list`, `agents info pm`, `agents project`) |
 | `setup-rentacar` | Clona y levanta rentacar-modern con Docker |
 | `migrate-vm` | Migra VMs (QEMU/libvirt) entre distros |
+| `setup-sudoers` | Configura NOPASSWD para dev tools (apt, npm, docker, systemctl) |
 
 ### Claude Code (`claude/`)
 
@@ -37,7 +38,8 @@ claude/
 ├── CLAUDE.md                   # Instrucciones globales + routing de agentes
 ├── claude.json.template        # MCPs globales de Claude Code (con placeholders)
 ├── settings/
-│   └── settings.json           # Config completa: HUD, plugins, permisos, idioma
+│   ├── settings.json                   # Config completa: HUD, plugins, permisos, idioma
+│   └── settings.local.json.template   # Template proyecto: hook #exit, AGENT_TEAMS, permisos locales
 ├── agents/
 │   ├── pm.md                   # PM Agent — orquestador (solo con @pm)
 │   ├── prompt-engineer.md      # Prompt Engineer — PRDs, specs, briefs (Opus)
@@ -240,6 +242,7 @@ Siempre sincroniza `settings.json` al final (HUD, plugins, permisos, idioma).
 7. Copia `gemini/settings.json` a `~/.gemini/settings.json` (solo si no existe, con placeholders)
 8. Muestra instrucciones para reemplazar tokens (Magic, Figma, Neon, Context7)
 9. Menu: instalar entorno de desarrollo, VMs, o solo symlinks
+10. (Opcional) `setup-sudoers` — configura NOPASSWD para dev tools sin sudo interactivo
 
 ## Workspace tmux (`code`)
 
@@ -269,7 +272,9 @@ Claude Code se lanza con: `--permission-mode plan --effort max`
 Se sincroniza automaticamente. Incluye:
 
 - **Agent**: lead del dev-team (Staff Engineer) — coordina sin PM por defecto. PM solo con `@pm`
-- **Hook**: `UserPromptSubmit` — inyecta reglas obligatorias: AskUserQuestion antes de cambios, no trabajar directo en código, usar DIFF no WHOLE
+- **Hook `SessionStart`**: inyecta contexto del dev-team (rol, teammates, reglas) al inicio de cada sesion
+- **Hook `UserPromptSubmit`**: inyecta reglas obligatorias (AskUserQuestion, DIFF no WHOLE) en cada prompt
+- **Hook `#exit`**: cuando el usuario escribe `#exit`, envia `shutdown_request` a todos los teammates y ejecuta `tmux kill-session` para cerrar todo limpiamente
 - **HUD**: Statusline con info de sesion, tokens, modelo, git
 - **Plugins**: superpowers, frontend-design, feature-dev, context7, coderabbit, playwright, LSPs (TypeScript, PHP, Python), Figma, Notion, y mas
 - **Idioma**: Espanol
