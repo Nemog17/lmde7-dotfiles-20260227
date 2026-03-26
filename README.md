@@ -1,6 +1,6 @@
 # Dotfiles — LMDE 7 Dev Environment
 
-Configuracion completa de entorno de desarrollo para Linux Mint Debian Edition 7. Incluye workspace tmux, Claude Code con equipo de agentes AI, y herramientas de desarrollo.
+Configuracion completa de entorno de desarrollo para Linux Mint Debian Edition 7. Incluye workspace tmux, Claude Code con dev-team lean (5 persistentes + 3 on-demand), MCPs por plataforma (Claude/Codex/Gemini), y herramientas de desarrollo.
 
 ## Quick Start
 
@@ -34,15 +34,39 @@ code                # Abre workspace tmux
 
 ```
 claude/
-├── CLAUDE.md                 # Instrucciones globales + routing de agentes
+├── CLAUDE.md                   # Instrucciones globales + routing de agentes
+├── claude.json.template        # MCPs globales de Claude Code (con placeholders)
 ├── settings/
-│   └── settings.json         # Config completa: HUD, plugins, permisos, idioma
-└── agents/
-    ├── pm.md                 # PM Agent — orquestador (default model, max effort)
-    ├── frontend.md           # Frontend — Vue.js, Tailwind, mobile-first (Sonnet)
-    ├── backend.md            # Backend — Laravel 12, GraphQL, Actions (Sonnet)
-    ├── dba.md                # DBA — PostgreSQL, Neon, multi-tenancy (Sonnet)
-    └── devops.md             # DevOps — Cloudflare, CI/CD, Docker (Sonnet)
+│   └── settings.json           # Config completa: HUD, plugins, permisos, idioma
+├── agents/
+│   ├── pm.md                   # PM Agent — orquestador (solo con @pm)
+│   ├── prompt-engineer.md      # Prompt Engineer — PRDs, specs, briefs (Opus)
+│   ├── frontend.md             # Frontend — Vue.js, Tailwind, shadcn (Opus)
+│   ├── backend.md              # Backend — Laravel 12, GraphQL, Actions (Sonnet)
+│   ├── dba.md                  # DBA — PostgreSQL, Neon, multi-tenancy (Opus)
+│   ├── devops.md               # DevOps — Cloudflare, CI/CD, Docker (Sonnet)
+│   ├── fullstack.md            # Fullstack — features end-to-end (Opus, on-demand)
+│   ├── codex-agent.md          # Codex Agent — consultor técnico via Codex CLI
+│   ├── gemini-agent.md         # Gemini Agent — diseñador via Gemini CLI
+│   └── ralphy.md               # Ralphy — CLI autónomo para tareas largas
+├── skills/
+│   ├── frontend-comms/         # Comunicacion entre componentes frontend
+│   └── prompt-engineer/        # Ingenieria de prompts avanzada
+└── teams/
+    └── dev-team.md             # Configuracion del dev-team lean (5+3)
+```
+
+### Configs de Herramientas AI
+
+```
+codex/
+└── config.toml     # MCPs de Codex CLI: figma (url), swarm, sequential-thinking
+
+gemini/
+└── settings.json   # MCPs de Gemini CLI: magic, figma (con placeholders de tokens)
+
+ralphy/
+└── config.yaml     # Template de config para proyectos Ralphy
 ```
 
 ## Arquitectura de agentes
