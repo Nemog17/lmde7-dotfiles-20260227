@@ -2,7 +2,31 @@
 
 No sé programar. Antes de tocar código, SIEMPRE explícame en español simple.
 
-## PM Agent
+## Dev-Team (Agent Teams)
+
+### Persistentes (5 — se lanzan al crear el team)
+
+| Teammate | Modelo | Rol |
+|---|---|---|
+| `prompt-engineer` | Opus | Crafting de prompts optimizados para el equipo |
+| `dba` | Sonnet | PostgreSQL, migrations, indexes, multi-tenancy, Neon |
+| `devops` | Sonnet | Cloudflare, Docker, CI/CD, GitHub Actions |
+| `codex-agent` | Sonnet | Consultor técnico via Codex CLI (agents-mcp) |
+| `gemini-agent` | Sonnet | Diseñador via Gemini CLI (agents-mcp) |
+
+### On-demand (Agent tool, sin team_name)
+
+| Invocación | Modelo | Cuándo |
+|---|---|---|
+| `@fullstack` | Opus 4.6 1M | Cuando codex/gemini no entregan |
+| `@frontend` | Opus | Claude Code directo para Vue |
+| `@backend` | Sonnet | Claude Code directo para Laravel |
+| `@pm` | — | Solo cuando el usuario lo pida |
+
+### CLI autónomo: Ralphy
+`ralphy "tarea"` / `ralphy --prd file.md --parallel --create-pr` — loop largo, tareas desatendidas.
+
+### PM Agent
 El agente PM (`@pm`) solo se invoca cuando el usuario lo pide explícitamente con `@pm`. Cuando se invoca, ejecuta esa tarea y devuelve el resultado — NO seguir hablando con el PM después. Si el usuario quiere volver a usarlo, debe invocarlo de nuevo. En modo Agent Teams, el lead coordina directo sin PM automático.
 
 ## Antes de empezar cualquier tarea
