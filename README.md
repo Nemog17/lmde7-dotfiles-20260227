@@ -272,8 +272,8 @@ Claude Code se lanza con: `--permission-mode plan --effort max`
 Se sincroniza automaticamente. Incluye:
 
 - **Agent**: lead del dev-team (Staff Engineer) — coordina sin PM por defecto. PM solo con `@pm`
-- **Hook `SessionStart`**: inyecta contexto del dev-team (rol, teammates, reglas) al inicio de cada sesion
-- **Hook `UserPromptSubmit`**: inyecta reglas obligatorias (AskUserQuestion, DIFF no WHOLE) en cada prompt
+- **Hook `SessionStart`**: inyecta contexto del dev-team (5 persistentes, on-demand, Ralphy) y OBLIGA al lead a mostrar el brief de inicio (tabla teammates, on-demand, Ralphy CLI commands, Prompt Engineer workflow, regla DIFF)
+- **Hook `UserPromptSubmit`**: inyecta reglas obligatorias (AskUserQuestion, DIFF no WHOLE, 5 persistentes) en cada prompt
 - **Hook `#exit`**: cuando el usuario escribe `#exit`, envia `shutdown_request` a todos los teammates y ejecuta `tmux kill-session` para cerrar todo limpiamente
 - **HUD**: Statusline con info de sesion, tokens, modelo, git
 - **Plugins**: superpowers, frontend-design, feature-dev, context7, coderabbit, playwright, LSPs (TypeScript, PHP, Python), Figma, Notion, y mas
