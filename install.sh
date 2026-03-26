@@ -111,6 +111,21 @@ if [[ -f "$DOTFILES_DIR/gemini/settings.json" ]]; then
     fi
 fi
 
+# --- Claude Code MCPs (~/.claude.json) ---
+echo ""
+echo -e "${BLUE}[*]${NC} Configurando Claude Code MCPs..."
+
+if [[ -f "$DOTFILES_DIR/claude/claude.json.template" ]]; then
+    if [[ -f "$HOME/.claude.json" ]]; then
+        echo -e "  ${YELLOW}[!]${NC}  ~/.claude.json ya existe — no sobreescribiendo"
+        echo -e "  ${BLUE}[i]${NC}  MCPs actuales: $(python3 -c "import json; d=json.load(open('$HOME/.claude.json')); print(', '.join(d.get('mcpServers', {}).keys()))" 2>/dev/null || echo 'ver archivo')"
+    else
+        cp "$DOTFILES_DIR/claude/claude.json.template" "$HOME/.claude.json"
+        echo -e "  ${GREEN}[+]${NC}  ~/.claude.json creado con MCPs: Neon, Context7, Swarm"
+        echo -e "  ${YELLOW}[!]${NC}  IMPORTANTE: Ejecuta setup-claude opcion 24 para configurar tokens"
+    fi
+fi
+
 # --- PATH setup ---
 line='export PATH="$HOME/.local/bin:$PATH"'
 if ! grep -qF '.local/bin' "$HOME/.bashrc" 2>/dev/null; then

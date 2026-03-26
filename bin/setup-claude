@@ -219,11 +219,62 @@ echo "  [ ] 19) Gemini CLI MCPs — magic, figma, tailwindcss, a11y (requiere to
 echo "  [ ] 20) Ralphy config template — crear .ralphy/config.yaml en el proyecto"
 
 echo ""
+echo -e "${BOLD}  AI CLIs base${NC}"
+
+# Claude Code
+if has_command "claude"; then
+    echo -e "  ${DIM}[=] 21) Claude Code CLI — ya instalado${NC}"
+    CLI_CLAUDE="installed"
+else
+    echo "  [ ] 21) Claude Code CLI — claude code en terminal"
+    CLI_CLAUDE="available"
+fi
+
+# Codex CLI
+if has_command "codex"; then
+    echo -e "  ${DIM}[=] 22) Codex CLI (OpenAI) — ya instalado${NC}"
+    CLI_CODEX="installed"
+else
+    echo "  [ ] 22) Codex CLI (OpenAI) — agente de codigo en terminal"
+    CLI_CODEX="available"
+fi
+
+# Gemini CLI
+if has_command "gemini"; then
+    echo -e "  ${DIM}[=] 23) Gemini CLI (Google) — ya instalado${NC}"
+    CLI_GEMINI="installed"
+else
+    echo "  [ ] 23) Gemini CLI (Google) — agente Gemini en terminal"
+    CLI_GEMINI="available"
+fi
+
+echo ""
+echo -e "${BOLD}  Tokens y API Keys${NC}"
+echo "  [ ] 24) Configurar tokens interactivo — Magic MCP, Figma, Neon, Context7"
+
+echo ""
+echo -e "${BOLD}  Claude Code MCPs globales (~/.claude.json)${NC}"
+
+CLAUDE_JSON="$HOME/.claude.json"
+CLAUDE_MCP_COUNT=0
+if [[ -f "$CLAUDE_JSON" ]]; then
+    CLAUDE_MCP_COUNT=$(python3 -c "import json; d=json.load(open('$CLAUDE_JSON')); print(len(d.get('mcpServers', {})))" 2>/dev/null || echo "0")
+fi
+if [[ "$CLAUDE_MCP_COUNT" -gt "0" ]]; then
+    echo -e "  ${DIM}[=] 25) MCPs de Claude Code — $CLAUDE_MCP_COUNT ya configurados${NC}"
+    CLAUDE_MCP="installed"
+else
+    echo "  [ ] 25) MCPs de Claude Code — Neon, Context7, Swarm (requiere tokens)"
+    CLAUDE_MCP="available"
+fi
+
+echo ""
 echo -e "  ${BOLD}Opciones rapidas:${NC}"
 echo "  a) Todo lo que falta"
 echo "  s) Solo skills"
 echo "  m) Solo MCP servers"
 echo "  c) Solo CLI tools"
+echo "  ai) Solo AI CLIs (claude, codex, gemini)"
 echo "  q) Salir"
 echo ""
 read -rp "Elige (numeros separados por espacio, o letra): " choices
@@ -235,10 +286,11 @@ fi
 
 # Expandir opciones rapidas
 case "$choices" in
-    a) choices="1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20" ;;
-    s) choices="1 2 11 12 13 14 15" ;;
-    m) choices="3 4 5" ;;
-    c) choices="7 8 9 16 17" ;;
+    a)  choices="1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25" ;;
+    s)  choices="1 2 11 12 13 14 15" ;;
+    m)  choices="3 4 5" ;;
+    c)  choices="7 8 9 16 17" ;;
+    ai) choices="21 22 23" ;;
 esac
 
 echo ""
@@ -527,6 +579,124 @@ MCPEOF
                 mkdir -p .ralphy
                 cp "$DOTFILES_RALPHY" .ralphy/config.yaml
                 log ".ralphy/config.yaml creado — edita los valores para tu proyecto"
+            fi
+            ;;
+        21)
+            if [[ "$CLI_CLAUDE" == "installed" ]]; then
+                skip "Claude Code CLI"
+            else
+                info "Instalando Claude Code CLI..."
+                npm install -g @anthropic-ai/claude-code 2>&1 | tail -3
+                log "Claude Code instalado. Ejecuta: claude"
+            fi
+            ;;
+        22)
+            if [[ "$CLI_CODEX" == "installed" ]]; then
+                skip "Codex CLI"
+            else
+                info "Instalando Codex CLI (OpenAI)..."
+                npm install -g @openai/codex 2>&1 | tail -3
+                log "Codex CLI instalado. Ejecuta: codex"
+            fi
+            ;;
+        23)
+            if [[ "$CLI_GEMINI" == "installed" ]]; then
+                skip "Gemini CLI"
+            else
+                info "Instalando Gemini CLI (Google)..."
+                npm install -g @google/gemini-cli 2>&1 | tail -3
+                log "Gemini CLI instalado. Ejecuta: gemini"
+            fi
+            ;;
+        24)
+            info "Configuracion interactiva de tokens..."
+            echo ""
+            echo -e "  ${DIM}Deja vacio para saltar cualquier campo.${NC}"
+            echo ""
+
+            GEMINI_CFG="$HOME/.gemini/settings.json"
+
+            # Magic MCP (21st.dev)
+            read -rp "  Magic MCP — API Key de 21st.dev: " MAGIC_KEY
+            if [[ -n "$MAGIC_KEY" ]] && [[ -f "$GEMINI_CFG" ]]; then
+                if has_command jq; then
+                    tmp=$(mktemp)
+                    jq --arg k "$MAGIC_KEY" '.mcpServers.magic.env.API_KEY = $k' "$GEMINI_CFG" > "$tmp" && mv "$tmp" "$GEMINI_CFG"
+                else
+                    sed -i "s/API_KEY_AQUI/$MAGIC_KEY/g" "$GEMINI_CFG"
+                fi
+                log "Magic MCP API Key configurada en ~/.gemini/settings.json"
+            elif [[ -n "$MAGIC_KEY" ]]; then
+                warn "~/.gemini/settings.json no existe — ejecuta opcion 19 primero"
+            fi
+
+            # Figma PAT
+            read -rp "  Figma — Personal Access Token: " FIGMA_TOKEN
+            if [[ -n "$FIGMA_TOKEN" ]] && [[ -f "$GEMINI_CFG" ]]; then
+                if has_command jq; then
+                    tmp=$(mktemp)
+                    jq --arg t "$FIGMA_TOKEN" '.mcpServers.figma.env.FIGMA_PERSONAL_ACCESS_TOKEN = $t' "$GEMINI_CFG" > "$tmp" && mv "$tmp" "$GEMINI_CFG"
+                else
+                    sed -i "s/TOKEN_AQUI/$FIGMA_TOKEN/g" "$GEMINI_CFG"
+                fi
+                log "Figma PAT configurado en ~/.gemini/settings.json"
+            elif [[ -n "$FIGMA_TOKEN" ]]; then
+                warn "~/.gemini/settings.json no existe — ejecuta opcion 19 primero"
+            fi
+
+            # Neon API Token (para ~/.claude.json)
+            read -rp "  Neon — API Token (para MCP de Claude Code): " NEON_TOKEN
+            if [[ -n "$NEON_TOKEN" ]] && [[ -f "$HOME/.claude.json" ]]; then
+                if has_command jq; then
+                    tmp=$(mktemp)
+                    jq --arg t "Bearer $NEON_TOKEN" '.mcpServers.Neon.headers.Authorization = $t' "$HOME/.claude.json" > "$tmp" && mv "$tmp" "$HOME/.claude.json"
+                else
+                    sed -i "s/NEON_API_TOKEN_AQUI/$NEON_TOKEN/g" "$HOME/.claude.json"
+                fi
+                log "Neon token configurado en ~/.claude.json"
+            elif [[ -n "$NEON_TOKEN" ]]; then
+                warn "~/.claude.json no existe — ejecuta opcion 25 primero"
+            fi
+
+            # Context7 API Key (para ~/.claude.json)
+            read -rp "  Context7 — API Key: " CTX7_KEY
+            if [[ -n "$CTX7_KEY" ]] && [[ -f "$HOME/.claude.json" ]]; then
+                if has_command jq; then
+                    tmp=$(mktemp)
+                    jq --arg k "$CTX7_KEY" '.mcpServers.context7.headers.CONTEXT7_API_KEY = $k' "$HOME/.claude.json" > "$tmp" && mv "$tmp" "$HOME/.claude.json"
+                else
+                    sed -i "s/CONTEXT7_API_KEY_AQUI/$CTX7_KEY/g" "$HOME/.claude.json"
+                fi
+                log "Context7 API Key configurada en ~/.claude.json"
+            elif [[ -n "$CTX7_KEY" ]]; then
+                warn "~/.claude.json no existe — ejecuta opcion 25 primero"
+            fi
+
+            log "Configuracion de tokens completada"
+            ;;
+        25)
+            CLAUDE_JSON_DST="$HOME/.claude.json"
+            DOTFILES_DIR_RESOLVE="$(cd "$(dirname "$0")/.." && pwd)"
+            CLAUDE_JSON_TPL="$DOTFILES_DIR_RESOLVE/claude/claude.json.template"
+
+            if [[ "$CLAUDE_MCP" == "installed" ]]; then
+                skip "Claude Code MCPs (~/.claude.json ya tiene $CLAUDE_MCP_COUNT MCPs)"
+                info "Para agregar MCPs manualmente: claude mcp add <name> <command>"
+            else
+                if [[ -f "$CLAUDE_JSON_DST" ]]; then
+                    warn "~/.claude.json existe pero sin MCPs configurados"
+                    info "Agrega los MCPs con estos comandos:"
+                    echo "    claude mcp add --scope user Neon --transport http https://mcp.neon.tech/mcp"
+                    echo "    claude mcp add --scope user context7 --transport http https://mcp.context7.com/mcp"
+                    echo "    claude mcp add --scope user Swarm -- npx -y @swarmify/agents-mcp@latest"
+                    info "Luego ejecuta la opcion 24 para configurar los tokens"
+                elif [[ -f "$CLAUDE_JSON_TPL" ]]; then
+                    cp "$CLAUDE_JSON_TPL" "$CLAUDE_JSON_DST"
+                    log "~/.claude.json creado desde template con placeholders"
+                    warn "Ejecuta la opcion 24 para configurar los tokens (Neon, Context7)"
+                else
+                    warn "No se encontro el template en $CLAUDE_JSON_TPL"
+                fi
             fi
             ;;
         *)
