@@ -59,7 +59,7 @@ pane=$(tmux new-session -d -s "$session" -c "$dir" -PF '#{pane_id}')
 # Hook: re-aplica layout main-vertical con lead al 75% cada vez que se crea un pane
 # Esto evita que el panel del lead se comprima cuando se agregan/quitan teammates
 tmux set-hook -t "$session" after-split-window \
-    "tmux select-pane -t '$session:0.0' ; tmux select-layout -t '$session' main-vertical ; tmux resize-pane -t '$session:0.0' -x '75%'"
+    "run-shell 'tmux select-pane -t ${session}:0.0 && tmux select-layout -t ${session} main-vertical && tmux resize-pane -t ${session}:0.0 -x 75% || true'"
 
 # Solo el panel principal tiene HUD (teammates no tendrán CLAUDE_NO_HUD=0)
 # CLAUDE_NO_HUD no está seteado aquí → HUD activo en este panel
