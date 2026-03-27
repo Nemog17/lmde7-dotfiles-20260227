@@ -7,8 +7,12 @@ TMP=$(mktemp)
 trap "rm -f $TMP" EXIT
 cat > "$TMP"
 
-# If running as teammate (CLAUDE_NO_HUD=1) → allow
-[ "${CLAUDE_NO_HUD}" = "1" ] && exit 0
+# Capa 1: agent_id en stdin (si esta disponible)
+agent_id=$(python3 -c "import sys,json;d=json.load(open('$TMP'));print(d.get('agent_id',''))" 2>/dev/null)
+[ -n "$agent_id" ] && exit 0
+
+# Capa 2: CLAUDE_NO_HUD (confirmado empiricamente)
+[ "${CLAUDE_NO_HUD:-0}" = "1" ] && exit 0
 
 python3 << EOF
 import json, re, sys
