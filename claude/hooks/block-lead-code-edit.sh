@@ -1,9 +1,17 @@
 #!/usr/bin/env bash
-# Block the lead from directly editing code files.
-# Allow: .md, .json, memory files, config files
-# Block: .vue, .ts, .tsx, .js, .jsx, .php, .css, .scss
+# Block the lead from directly editing code or infra files.
+# Allow: .md, .json, memory files
+# Block: .vue, .ts, .tsx, .js, .jsx, .css, .scss (frontend)
+#        .php, .blade (backend)
+#        .sql (database)
+#        .sh, .bash, .yaml, .yml, .toml, .env, .lock (infra/config)
 
-file_path=$(python3 -c "import sys,json; print(json.load(sys.stdin).get('tool_input',{}).get('file_path',''))")
+INPUT=$(cat)
+
+# If running as teammate (CLAUDE_NO_HUD=1) → allow
+[ "${CLAUDE_NO_HUD}" = "1" ] && exit 0
+
+file_path=$(echo "$INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('tool_input',{}).get('file_path',''))")
 
 # If no file_path, allow
 [ -z "$file_path" ] && exit 0
@@ -13,8 +21,13 @@ ext="${file_path##*.}"
 
 # Check if it's a code file
 case "$ext" in
-  vue|ts|tsx|js|jsx|php|css|scss)
-    echo '{"decision":"block","reason":"LEAD NO ESCRIBE CODIGO. Delega al teammate correcto: Frontend (Vue/TS/CSS) → gemini-agent | Backend (PHP/Laravel) → codex-agent | Database → dba | Infra → devops. Flujo: Lead diagnostica → prompt-engineer crafta prompt → teammate aplica."}'
+  vue|ts|tsx|js|jsx|css|scss|\
+  php|blade|\
+  sql|\
+  sh|bash|\
+  yaml|yml|toml|\
+  env|lock)
+    echo '{"decision":"block","reason":"LEAD NO ESCRIBE CODIGO NI CONFIG. Delega al teammate correcto: Frontend (vue/ts/css/scss) → frontend | Backend (php/blade) → backend | Database (sql) → dba | Infra/Config (sh/yaml/toml/env/lock) → devops. Flujo: Lead diagnostica → prompt-engineer crafta prompt → teammate aplica."}'
     ;;
   *)
     exit 0
