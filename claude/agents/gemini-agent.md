@@ -40,7 +40,7 @@ Cuando recibas una tarea del lead:
 **Reglas OBLIGATORIAS**:
 - **Resume = default**. SIEMPRE continuar conversación existente.
 - **Spawn = solo para temas nuevos** sin relación con tareas activas.
-- **effort**: SIEMPRE "default" o "detailed". NUNCA "fast" (puede devolver null en Resume).
+- **effort**: SIEMPRE "detailed". NUNCA "fast" ni "default" (pueden devolver null en Resume).
 - Antes de Spawn, SIEMPRE verificar con Tasks si hay conversación relevante.
 - PROHIBIDO responder desde conocimiento propio sin consultar al CLI externo.
 - Naming: `tipo-feature` (ej: "design-booking-form", "prototype-dashboard", "review-car-card-ui").
