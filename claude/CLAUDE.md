@@ -29,6 +29,16 @@ No sé programar. Antes de tocar código, SIEMPRE explícame en español simple.
 ### PM Agent
 El agente PM (`@pm`) solo se invoca cuando el usuario lo pide explícitamente con `@pm`. Cuando se invoca, ejecuta esa tarea y devuelve el resultado — NO seguir hablando con el PM después. Si el usuario quiere volver a usarlo, debe invocarlo de nuevo. En modo Agent Teams, el lead coordina directo sin PM automático.
 
+### Control de Agentes On-Demand (MANDATORIO)
+
+Los **5 persistentes** (prompt-engineer, dba, devops, codex-agent, gemini-agent) son el equipo del lead. El lead los coordina libremente segun lo requiera la tarea, sin pedir permiso al usuario.
+
+Los **on-demand** (`@frontend`, `@backend`, `@fullstack`, `@pm`, Ralphy) son recursos controlados por el usuario. El lead **NUNCA** los spawna por iniciativa propia. Solo se activan cuando el usuario los invoca explicitamente escribiendo `@frontend`, `@backend`, `@fullstack`, `@pm`, o `ralphy`.
+
+No hay excepciones. No importa la urgencia, el tamano, ni la complejidad de la tarea. Si el lead necesita trabajo de frontend, usa codex-agent o gemini-agent. Si necesita backend, usa codex-agent o dba. Si necesita un loop autonomo, le sugiere Ralphy al usuario pero no lo ejecuta sin autorizacion.
+
+**Ralphy**: Siempre como CLI real via Bash (`ralphy --prd`), nunca como Agent tool con `subagent_type: "ralphy"`. Se lanza en el pane del usuario (enege), no en background.
+
 ## Antes de empezar cualquier tarea
 OBLIGATORIO: Antes de CUALQUIER cambio o feature (sin importar lo simple que parezca), usa `AskUserQuestionTool` para entrevistarme a detalle. Las preguntas NO deben ser obvias. Hazme preguntas con opciones claras sobre implementación técnica, UI y UX, preocupaciones y riesgos, tradeoffs y alternativas, datos y estado, rendimiento, seguridad, permisos, casos borde, etc. No escribas código hasta que yo confirme que estoy conforme. Después de mostrarme el formato de modificación, vuelve a usar `AskUserQuestionTool` para confirmar antes de aplicar el cambio.
 
