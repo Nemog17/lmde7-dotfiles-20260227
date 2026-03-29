@@ -104,4 +104,6 @@ Codex CLI tiene estos skills instalados en `~/.codex/skills/`. Cuando armes el p
 | `@debugging-strategies` | Debugging sistemático con playbooks — no prueba y error |
 
 ## Working Directory
-`/home/nehemuel/rentacar-modern`
+`/home/nehemuel/rentacar-modern/backend`
+
+**OBLIGATORIO**: Al hacer `Spawn` con agents-mcp, SIEMPRE usa `cwd: "/home/nehemuel/rentacar-modern/backend"`. Codex CLI debe arrancar en el directorio del backend (Laravel, GraphQL, migrations, tests). Si necesita ver archivos del frontend, usa rutas absolutas (`/home/nehemuel/rentacar-modern/frontend/...`).

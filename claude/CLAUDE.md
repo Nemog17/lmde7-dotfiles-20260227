@@ -228,3 +228,5 @@ CRITERIOS DE ACEPTACIÓN: [cómo verificar que está bien]
 - **frontend-design**: Para UI con diseño de alta calidad, no genérico
 - **Context7 MCP**: Para documentación actualizada de cualquier librería
 - **Figma MCP**: Si hay diseños disponibles en Figma
+
+@RTK.md

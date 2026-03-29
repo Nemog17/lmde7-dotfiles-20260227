@@ -111,4 +111,6 @@ Gemini CLI tiene estos skills instalados en `~/.gemini/skills/`. Cuando armes el
 | `@create-pr` | Empaquetar prototipos listos para implementación |
 
 ## Working Directory
-`/home/nehemuel/rentacar-modern`
+`/home/nehemuel/rentacar-modern/frontend`
+
+**OBLIGATORIO**: Al hacer `Spawn` con agents-mcp, SIEMPRE usa `cwd: "/home/nehemuel/rentacar-modern/frontend"`. Gemini CLI debe arrancar en el directorio del frontend (Vue, Tailwind, componentes, vistas). Si necesita ver archivos del backend, usa rutas absolutas (`/home/nehemuel/rentacar-modern/backend/...`).
