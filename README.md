@@ -68,6 +68,9 @@ gemini/
 └── settings.json   # MCPs de Gemini CLI: magic, figma (con placeholders de tokens)
 
 ralphy/
+├── src/            # Patches locales de ralphy-cli (fork Nemog17/ralphy)
+├── package.json    # Dependencias del CLI
+├── tsconfig.json   # Config TypeScript
 └── config.yaml     # Template de config para proyectos Ralphy
 ```
 
@@ -96,8 +99,8 @@ ralphy/
 | **prompt-engineer** | Opus | Redactar PRDs, refinar specs, mejorar prompts | superpowers:brainstorming |
 | **dba** | Opus | PostgreSQL, multi-tenancy, migraciones, indexes | Neon MCP |
 | **devops** | Sonnet | Cloudflare, CI/CD, Docker, GitHub Actions | gh, wrangler, neonctl |
-| **codex-agent** | Sonnet | Consultor técnico via Codex CLI — debugging, code review | agents-mcp |
-| **gemini-agent** | Sonnet | Diseñador via Gemini CLI — prototipos UI, briefs | agents-mcp |
+| **codex-agent** | Sonnet | Consultor técnico via Codex CLI — Resume por defecto, Spawn solo para temas nuevos | agents-mcp |
+| **gemini-agent** | Sonnet | Diseñador via Gemini CLI — Resume por defecto, Spawn solo para temas nuevos | agents-mcp |
 
 ### On-demand (lanzar con Agent tool, descartar al terminar)
 
@@ -116,6 +119,19 @@ El lead NUNCA pide reescribir archivos completos. Siempre delega con:
 - Razón del cambio
 
 Los teammates usan el formato `📁📍🔍✏️💡` del CLAUDE.md.
+
+### Ralphy CLI — Patches locales
+
+El directorio `ralphy/` contiene el código fuente parcheado de [ralphy-cli](https://github.com/michaelshimeles/ralphy) (fork: `Nemog17/ralphy`).
+
+**Patch principal:** Validación de cambios reales antes de marcar una task como completada. Sin este patch, Ralphy marca tasks como `[x]` aunque el agente AI no haya hecho cambios en el repositorio.
+
+Para aplicar los patches después de instalar:
+```bash
+cd ~/ralphy/cli
+cp -r ~/dotfiles/ralphy/src ./src
+npm run build
+```
 
 ### Orden de ejecución con dependencias
 
